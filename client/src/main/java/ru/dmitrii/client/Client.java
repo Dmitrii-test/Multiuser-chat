@@ -1,10 +1,10 @@
 package ru.dmitrii.client;
 
 import utils.Connection;
-import utils.Message;
-import utils.MessageType;
-import utils.handlers.ConsolePrinter;
-import utils.handlers.PrintMessage;
+import utils.models.Message;
+import utils.models.MessageType;
+import utils.printers.ConsolePrinter;
+import utils.printers.PrintMessage;
 
 import java.io.IOException;
 import java.net.Socket;

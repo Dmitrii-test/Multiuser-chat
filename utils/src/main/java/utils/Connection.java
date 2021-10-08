@@ -1,7 +1,8 @@
 package utils;
 
-import utils.handlers.ConsolePrinter;
-import utils.handlers.PrintMessage;
+import utils.models.Message;
+import utils.printers.ConsolePrinter;
+import utils.printers.PrintMessage;
 
 import java.io.Closeable;
 import java.io.IOException;

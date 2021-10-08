@@ -1,4 +1,4 @@
-package utils.handlers;
+package utils.printers;
 
 public interface PrintMessage {
 

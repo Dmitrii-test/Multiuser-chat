@@ -1,4 +1,8 @@
 # Project exclude paths
-/client/target/
-/server/target/
-/utils/target/
+/out/
+/.idea/
+log/
+target/
+*.iml
+*.iws
+*.class

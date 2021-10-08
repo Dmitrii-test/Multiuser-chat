@@ -1,4 +1,4 @@
-package utils;
+package utils.models;
 
 public enum MessageType {
     NAME_REQUEST,
