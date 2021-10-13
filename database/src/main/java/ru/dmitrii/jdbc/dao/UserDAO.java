@@ -1,6 +1,7 @@
 package ru.dmitrii.jdbc.dao;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -9,7 +10,8 @@ import utils.models.User;
 import java.util.List;
 
 @Component
-public class UserDAO implements CRUD{
+@ComponentScan
+public class UserDAO implements CRUD<User> {
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -19,24 +21,34 @@ public class UserDAO implements CRUD{
     }
 
     public List<User> index() {
-        return jdbcTemplate.query("SELECT * FROM user_tes", new BeanPropertyRowMapper<>(User.class));
+        return jdbcTemplate.query("SELECT * FROM users", new BeanPropertyRowMapper<>(User.class));
     }
 
     public User show(int Id) {
-        return (User) jdbcTemplate.queryForObject("SELECT * FROM user_tes WHERE id=?",new Object[]{Id},new UserMapper());
+        return (User) jdbcTemplate.queryForObject("SELECT * FROM users WHERE id=?", new UserMapper(), Id);
     }
 
-    public void save(User user) {
-        jdbcTemplate.update("INSERT INTO user_tes (first_name, adress) VALUES(?, ?)", user.getName(),
-                user.getPassword());
+    public boolean checkUser(String name) {
+        Integer count = jdbcTemplate.queryForObject("select count(*) from users WHERE name=?",Integer.class, name);
+        return count != null && count != 0;
+    }
+
+    public int save(User user) {
+        String name = user.getName();
+        if (!checkUser(user.getName())) {
+            return jdbcTemplate.update("INSERT INTO users (name, password) VALUES(?, ?)", name,
+                    user.getPassword());
+        }
+        else System.out.printf("Пользователь %s уже есть в базe %n", name);
+        return 0;
     }
 
     public void update(int id, User updatedUser) {
-        jdbcTemplate.update("UPDATE user_tes SET first_name=?, adress=? WHERE id=?", updatedUser.getName(),
+        jdbcTemplate.update("UPDATE users SET name=?, password=? WHERE id=?", updatedUser.getName(),
                 updatedUser.getPassword(), id);
     }
 
     public void delete(int id) {
-        jdbcTemplate.update("DELETE FROM user_tes WHERE id=?", id);
+        jdbcTemplate.update("DELETE FROM users WHERE id=?", id);
     }
 }

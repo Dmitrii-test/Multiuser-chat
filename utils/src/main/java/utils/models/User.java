@@ -12,6 +12,15 @@ public class User implements Serializable {
     public User() {
     }
 
+    public User(String name) {
+        this.name = name;
+    }
+
+    public User(String name, String password) {
+        this.name = name;
+        this.password = password;
+    }
+
     public User(int id, String name, String password, List<Message> messages) {
         this.id = id;
         this.name = name;

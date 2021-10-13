@@ -1,8 +1,13 @@
 package ru.dmitrii.servet;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import ru.dmitrii.jdbc.DataConfiguration;
+import ru.dmitrii.jdbc.dao.UserDAO;
 import utils.Connection;
 import utils.models.Message;
 import utils.models.MessageType;
+import utils.models.User;
 import utils.printers.ConsolePrinter;
 import utils.printers.PrintMessage;
 
@@ -19,8 +24,16 @@ public class Server {
     static private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<>();
     static private final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
     static private final List<Handler> handlerList = new ArrayList<>();
+    static private final User server = new User("server", "server");
+    static private UserDAO userDAO;
+
 
     public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(DataConfiguration.class, UserDAO.class);
+        context.refresh();
+        userDAO = context.getBean(UserDAO.class);
+        userDAO.save(server);
         PRINT_MESSAGE.writeMessage("Введите порт на котором будет работать чат-сервер:");
         try (ServerSocket serverSocket = new ServerSocket(PRINT_MESSAGE.readInt())) {
             PRINT_MESSAGE.writeMessage("Сервер запущен");
@@ -75,7 +88,7 @@ public class Server {
         handlerList.forEach(Thread::interrupt);
         CONNECTION_MAP.forEach((k, v) -> {
             try {
-                v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера"));
+                v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера", server));
                 v.close();
             } catch (IOException e) {
                 PRINT_MESSAGE.writeMessage("Ошибка закрытия соединения " + e.getMessage());
@@ -116,13 +129,13 @@ public class Server {
             boolean accepted = false;
             String name = null;
             while (!accepted) {
-                connection.send(new Message(MessageType.NAME_REQUEST));
+                connection.send(new Message(MessageType.NAME_REQUEST, server));
                 Message message = connection.receive();
                 if (message.getType() == MessageType.USER_NAME) {
                     name = message.getData();
                     if (!name.isEmpty() && CONNECTION_MAP.get(name) == null) {
                         CONNECTION_MAP.putIfAbsent(name, connection);
-                        connection.send(new Message(MessageType.NAME_ACCEPTED));
+                        connection.send(new Message(MessageType.NAME_ACCEPTED,server));
                         accepted = true;
                     }
                 }
@@ -139,7 +152,7 @@ public class Server {
         private void notifyAddUser(Connection connection, String userName) {
             for (String clientName : CONNECTION_MAP.keySet()) {
                 if (!clientName.equals(userName)) {
-                    connection.send(new Message(MessageType.USER_ADDED, clientName));
+                    connection.send(new Message(MessageType.USER_ADDED, clientName, server));
                 }
             }
         }
@@ -157,7 +170,7 @@ public class Server {
                     if (message.getType() == MessageType.TEXT) {
                         String messageText = userName + ": " + message.getData();
                         PRINT_MESSAGE.writeMessage(messageText);
-                        sendBroadcastMessage(new Message(MessageType.TEXT, messageText));
+                        sendBroadcastMessage(new Message(MessageType.TEXT, messageText, new User(userName)));
                     } else PRINT_MESSAGE.writeMessage(
                             String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
                                     message.getType().toString(), userName));
@@ -176,7 +189,7 @@ public class Server {
             try {
                 connection = new Connection(socket);
                 clientName = serverHandshake(connection);
-                sendBroadcastMessage(new Message(MessageType.USER_ADDED, clientName));
+                sendBroadcastMessage(new Message(MessageType.USER_ADDED, clientName, server));
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
                 serverMessageLoop(connection, clientName);
@@ -185,7 +198,7 @@ public class Server {
             }
             if (clientName != null) {
                 CONNECTION_MAP.remove(clientName);
-                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName));
+                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName, server));
             }
             PRINT_MESSAGE.writeMessage(String.format("Соединение с удаленным адресом (%s) закрыто.", socket.getRemoteSocketAddress()));
         }

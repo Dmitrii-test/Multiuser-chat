@@ -1,18 +1,16 @@
 package ru.dmitrii.jdbc.dao;
 
 
-import utils.models.User;
-
 /**
  *  Интерфейс CRUD для DAO
  */
-public interface CRUD {
+public interface CRUD<T> {
 
-    void save(User user);
+    int save(T t);
 
-    User show(int Id);
+    T show(int Id);
 
-    void update(int id, User user);
+    void update(int id, T t);
 
     void delete(int id);
 
