@@ -3,6 +3,7 @@ package ru.dmitrii.servet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import ru.dmitrii.jdbc.DataConfiguration;
+import ru.dmitrii.jdbc.dao.MessageDAO;
 import ru.dmitrii.jdbc.dao.UserDAO;
 import utils.Connection;
 import utils.models.Message;
@@ -15,6 +16,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +29,15 @@ public class Server {
     static private final List<Handler> handlerList = new ArrayList<>();
     static private final User server = new User("server", "server");
     static private UserDAO userDAO;
+    static private MessageDAO messageDAO;
 
 
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.register(DataConfiguration.class, UserDAO.class);
+        context.register(DataConfiguration.class);
         context.refresh();
         userDAO = context.getBean(UserDAO.class);
+        messageDAO = context.getBean(MessageDAO.class);
         userDAO.save(server);
         PRINT_MESSAGE.writeMessage("Введите порт на котором будет работать чат-сервер:");
         try (ServerSocket serverSocket = new ServerSocket(PRINT_MESSAGE.readInt())) {
@@ -60,7 +65,7 @@ public class Server {
      */
     private static Thread getThreadSockets(ServerSocket serverSocket) {
         return new Thread(() -> {
-                    // accept ждёт пока кто-либо не захочет подсоединится к нему. возврашает Socet
+                    // accept ждёт пока кто-либо не захочет подсоединится к нему. возврашает Socket
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
                             Handler handlerSocket = new Handler(serverSocket.accept());
@@ -127,17 +132,34 @@ public class Server {
          */
         private String serverHandshake(Connection connection) throws IOException {
             boolean accepted = false;
-            String name = null;
+            String name = "";
+            String password = "";
+            String wrong = "";
             while (!accepted) {
-                connection.send(new Message(MessageType.NAME_REQUEST, server));
+                connection.send(new Message(MessageType.NAME_REQUEST,wrong,server));
                 Message message = connection.receive();
                 if (message.getType() == MessageType.USER_NAME) {
-                    name = message.getData();
-                    if (!name.isEmpty() && CONNECTION_MAP.get(name) == null) {
-                        CONNECTION_MAP.putIfAbsent(name, connection);
-                        connection.send(new Message(MessageType.NAME_ACCEPTED,server));
-                        accepted = true;
+                    String[] split = message.getData().split(" :: ");
+                    name = split[0];
+                    password = split[1];
+                    if (!name.isEmpty() && !password.isEmpty()) {
+                        if (!userDAO.checkUser(name) && CONNECTION_MAP.get(name) == null) {
+                            CONNECTION_MAP.putIfAbsent(name, connection);
+                            userDAO.save(new User(name, password));
+                            int index = userDAO.indexUser(name);
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index) , server));
+                            accepted = true;
+                        }
+                        if (userDAO.checkUser(name, password)) {
+                            CONNECTION_MAP.putIfAbsent(name, connection);
+                            int index = userDAO.indexUser(name);
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), server));
+                            accepted = true;
+                        }
+                        wrong = "Не правильный пользователь или пароль";
+                        continue;
                     }
+                    wrong = "Пустой пользователь или пароль";
                 }
             }
             return name;
@@ -165,36 +187,36 @@ public class Server {
          */
         private void serverMessageLoop(Connection connection, String userName) throws IOException {
             while (!Thread.currentThread().isInterrupted()) {
-                try {
                     Message message = connection.receive();
                     if (message.getType() == MessageType.TEXT) {
-                        String messageText = userName + ": " + message.getData();
+                        String messageText = String.format("%s (%s) : %s",userName,
+                                message.getDateTime().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)), message.getData());
                         PRINT_MESSAGE.writeMessage(messageText);
                         sendBroadcastMessage(new Message(MessageType.TEXT, messageText, new User(userName)));
                     } else PRINT_MESSAGE.writeMessage(
                             String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
                                     message.getType().toString(), userName));
-                }catch (SocketException ignored) {
-                }
+
             }
 
         }
 
         @Override
         public void run() {
-            PRINT_MESSAGE.writeMessage("Установлено соединение с удаленным клиентом с адресом: " +
+            PRINT_MESSAGE.writeMessage("Установлено соединение с клиентом с адресом: " +
                     socket.getRemoteSocketAddress());
             Connection connection;
             String clientName = null;
             try {
                 connection = new Connection(socket);
                 clientName = serverHandshake(connection);
-                sendBroadcastMessage(new Message(MessageType.USER_ADDED, clientName, server));
+                Message messageAdd = new Message(MessageType.USER_ADDED, clientName, server);
+                sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
                 serverMessageLoop(connection, clientName);
             } catch (IOException e) {
-                PRINT_MESSAGE.writeMessage("Ошибка установки соединения " + e.getMessage());
+                PRINT_MESSAGE.writeMessage(e.getMessage());
             }
             if (clientName != null) {
                 CONNECTION_MAP.remove(clientName);

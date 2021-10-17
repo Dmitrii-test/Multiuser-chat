@@ -5,11 +5,13 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
     <changeSet id="create-table-messages" author="Liquibase">
+        <sql>CREATE TYPE ms_type AS ENUM ('NAME_REQUEST','USER_NAME', 'NAME_ACCEPTED',
+            'TEXT',  'USER_ADDED',  'USER_REMOVED', 'SERVER_DISCONNECT')</sql>
         <createTable tableName="messages">
             <column name="id" type="int" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
-            <column name="type" type="varchar(12)">
+            <column name="type" type="ms_type" defaultValue="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="data" type="varchar(128)"/>

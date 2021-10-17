@@ -8,5 +8,12 @@
     <sql dbms="postgresql">
         CREATE  DATABASE chat;
     </sql>
+    <rollback>
+        <dropTable tableName="databasechangelog"/>
+        <dropTable tableName="databasechangeloglock"/>
+        <sql dbms="postgresql">
+            DROP DATABASE chat FORCE;
+        </sql>
+    </rollback>
 </changeSet>
 </databaseChangeLog>

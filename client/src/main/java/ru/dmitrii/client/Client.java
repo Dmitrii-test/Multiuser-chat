@@ -3,6 +3,7 @@ package ru.dmitrii.client;
 import utils.Connection;
 import utils.models.Message;
 import utils.models.MessageType;
+import utils.models.User;
 import utils.printers.ConsolePrinter;
 import utils.printers.PrintMessage;
 
@@ -13,6 +14,8 @@ public class Client {
     protected Connection connection;
     private volatile boolean clientConnected = false;
     private static final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
+    private User currentUser;
+    private static final User unknown = new User("Unknown", "");
 
     public static void main(String[] args) {
         Client client = new Client();
@@ -47,6 +50,15 @@ public class Client {
     }
 
     /**
+     * Получение пароля
+     * @return String
+     */
+    protected String getPassword() {
+        PRINT_MESSAGE.writeMessage("Введите пароль:");
+        return PRINT_MESSAGE.readString();
+    }
+
+    /**
      * Получить поток обработки сообщений
      * @return SocketThread
      */
@@ -59,7 +71,7 @@ public class Client {
      * @param text String
      */
     protected void sendTextMessage(String text) {
-            connection.send(new Message(MessageType.TEXT, text));
+            connection.send(new Message(MessageType.TEXT, text, currentUser));
     }
 
     public void run() {
@@ -144,10 +156,16 @@ public class Client {
         protected void clientHandshake() throws IOException {
             while (!clientConnected) {
                 Message message = connection.receive();
+                String clientName = "";
+                String password = "";
                 if (message.getType() == MessageType.NAME_REQUEST) {
-                    String clientName = getUserName();
-                    connection.send(new Message(MessageType.USER_NAME, clientName));
+                    PRINT_MESSAGE.writeMessage(message.getData());
+                    clientName = getUserName();
+                    password = getPassword();
+                    connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, unknown));
                 } else if (message.getType() == MessageType.NAME_ACCEPTED) {
+                    int index = Integer.parseInt(message.getData());
+                    currentUser = new User(index, clientName, password);
                     notifyStatusConnection(true);
                 } else throw new IOException("Unexpected MessageType");
             }
