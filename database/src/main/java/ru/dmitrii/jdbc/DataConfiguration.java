@@ -8,15 +8,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 @Configuration
-@PropertySource(value = "classpath:/db.properties",encoding = "UTF-8")
+@PropertySource(value = "classpath:/db.properties", encoding = "UTF-8")
 public class DataConfiguration {
     @Value("${db.driverClassName}")
     private String driverClassName;
@@ -33,6 +28,16 @@ public class DataConfiguration {
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName(driverClassName);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    @Bean
+    public DataSource dataSourceDB() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(driverClassName);
         dataSource.setUrl(urlDB);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
@@ -45,22 +50,18 @@ public class DataConfiguration {
     }
 
     @Bean
-    public SpringLiquibase liquibase() {
-        SpringLiquibase liquibase = new SpringLiquibase();
-        liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.xml");
-        liquibase.setDefaultSchema("public");
-        liquibase.setDataSource(dataSource());
-        return liquibase;
+    public SpringLiquibase liquibase(SpringLiquibase liquibaseDB) {
+        liquibaseDB.setChangeLog("classpath:db/changelog/db.changelog-master.xml");
+        liquibaseDB.setDataSource(dataSource());
+        return liquibaseDB;
     }
 
-    @PostConstruct
-    public void makeDB() {
-        try (Connection connection = DriverManager.getConnection(url, username, password);) {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("CREATE  DATABASE chat");
-            System.out.println("База данных chat создана");
-        } catch (SQLException e) {
-            System.out.println("База данных chat уже существует");
-        }
+    @Bean
+    public SpringLiquibase liquibaseDB() {
+        SpringLiquibase liquibase = new SpringLiquibase();
+        liquibase.setChangeLog("classpath:db/changelog/db.changelog-base.xml");
+        liquibase.setDefaultSchema("public");
+        liquibase.setDataSource(dataSourceDB());
+        return liquibase;
     }
 }
