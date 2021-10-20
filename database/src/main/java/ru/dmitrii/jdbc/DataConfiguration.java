@@ -7,6 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
@@ -49,6 +50,22 @@ public class DataConfiguration {
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dataSource) {
         return new JdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public SimpleJdbcInsert simpleJdbcInsertUsers(JdbcTemplate jdbcTemplate) {
+        return new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("users")
+                .usingColumns("name", "password")
+                .usingGeneratedKeyColumns("id");
+    }
+
+    @Bean
+    public SimpleJdbcInsert simpleJdbcInsertMessages(JdbcTemplate jdbcTemplate) {
+        return new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("messages")
+                .usingColumns("type", "data", "datetime", "user_id")
+                .usingGeneratedKeyColumns("id");
     }
 
     @Bean

@@ -15,7 +15,7 @@ public class Client {
     private volatile boolean clientConnected = false;
     private static final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
     private User currentUser;
-    private static final User unknown = new User("Unknown", "");
+    private static final User unknown = new User(2,"unknown", "");
 
     public static void main(String[] args) {
         Client client = new Client();
@@ -154,10 +154,10 @@ public class Client {
          * @throws IOException IOException
          */
         protected void clientHandshake() throws IOException {
+            String clientName = "";
+            String password = "";
             while (!clientConnected) {
                 Message message = connection.receive();
-                String clientName = "";
-                String password = "";
                 if (message.getType() == MessageType.NAME_REQUEST) {
                     PRINT_MESSAGE.writeMessage(message.getData());
                     clientName = getUserName();
@@ -165,6 +165,7 @@ public class Client {
                     connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, unknown));
                 } else if (message.getType() == MessageType.NAME_ACCEPTED) {
                     int index = Integer.parseInt(message.getData());
+                    PRINT_MESSAGE.writeMessage("Получен индекс " + index);
                     currentUser = new User(index, clientName, password);
                     notifyStatusConnection(true);
                 } else throw new IOException("Unexpected MessageType");

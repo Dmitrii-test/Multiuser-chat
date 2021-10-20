@@ -1,6 +1,5 @@
 package ru.dmitrii.servet;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import ru.dmitrii.jdbc.DataConfiguration;
 import ru.dmitrii.jdbc.dao.MessageDAO;
@@ -38,7 +37,8 @@ public class Server {
         context.refresh();
         userDAO = context.getBean(UserDAO.class);
         messageDAO = context.getBean(MessageDAO.class);
-        userDAO.save(server);
+        if (userDAO.checkUser(server.getName())) userDAO.save(server);
+        server.setId(userDAO.indexUser(server.getName()));
         PRINT_MESSAGE.writeMessage("Введите порт на котором будет работать чат-сервер:");
         try (ServerSocket serverSocket = new ServerSocket(PRINT_MESSAGE.readInt())) {
             PRINT_MESSAGE.writeMessage("Сервер запущен");
@@ -60,26 +60,27 @@ public class Server {
 
     /**
      * Создание потока ожидающего подключение
+     *
      * @param serverSocket ServerSocket
      * @return Thread
      */
     private static Thread getThreadSockets(ServerSocket serverSocket) {
         return new Thread(() -> {
-                    // accept ждёт пока кто-либо не захочет подсоединится к нему. возврашает Socket
-                    while (!Thread.currentThread().isInterrupted()) {
-                        try {
-                            Handler handlerSocket = new Handler(serverSocket.accept());
-                            handlerList.add(handlerSocket);
-                            handlerSocket.start();
-                        } catch (SocketException r) {
-                            PRINT_MESSAGE.writeMessage("Остановка сервера");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            PRINT_MESSAGE.writeMessage("Ошибка ввода вывода " + e.getMessage());
-                        }
+            // accept ждёт пока кто-либо не захочет подсоединится к нему. возврашает Socket
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Handler handlerSocket = new Handler(serverSocket.accept());
+                    handlerList.add(handlerSocket);
+                    handlerSocket.start();
+                } catch (SocketException r) {
+                    PRINT_MESSAGE.writeMessage("Остановка сервера");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    PRINT_MESSAGE.writeMessage("Ошибка ввода вывода " + e.getMessage());
+                }
 
-                    }
-                });
+            }
+        });
     }
 
     /**
@@ -109,6 +110,7 @@ public class Server {
      * @param message Message
      */
     public static void sendBroadcastMessage(Message message) {
+        if (message.getType() != MessageType.TEXT) messageDAO.save(message);
         for (String clientName : CONNECTION_MAP.keySet()) {
             CONNECTION_MAP.get(clientName).send(message);
         }
@@ -136,18 +138,18 @@ public class Server {
             String password = "";
             String wrong = "";
             while (!accepted) {
-                connection.send(new Message(MessageType.NAME_REQUEST,wrong,server));
+                connection.send(new Message(MessageType.NAME_REQUEST, wrong, server));
                 Message message = connection.receive();
+                messageDAO.save(message);
                 if (message.getType() == MessageType.USER_NAME) {
                     String[] split = message.getData().split(" :: ");
                     name = split[0];
                     password = split[1];
                     if (!name.isEmpty() && !password.isEmpty()) {
-                        if (!userDAO.checkUser(name) && CONNECTION_MAP.get(name) == null) {
+                        if (userDAO.checkUser(name) && CONNECTION_MAP.get(name) == null) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
-                            userDAO.save(new User(name, password));
-                            int index = userDAO.indexUser(name);
-                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index) , server));
+                            int index = userDAO.save(new User(name, password));
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), server));
                             accepted = true;
                         }
                         if (userDAO.checkUser(name, password)) {
@@ -181,21 +183,25 @@ public class Server {
 
         /**
          * Цикл приема и обработки сообщений Text
+         *
          * @param connection Connection
-         * @param userName String
          * @throws IOException IOException
          */
-        private void serverMessageLoop(Connection connection, String userName) throws IOException {
+        private void serverMessageLoop(Connection connection) throws IOException {
             while (!Thread.currentThread().isInterrupted()) {
-                    Message message = connection.receive();
-                    if (message.getType() == MessageType.TEXT) {
-                        String messageText = String.format("%s (%s) : %s",userName,
-                                message.getDateTime().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)), message.getData());
-                        PRINT_MESSAGE.writeMessage(messageText);
-                        sendBroadcastMessage(new Message(MessageType.TEXT, messageText, new User(userName)));
-                    } else PRINT_MESSAGE.writeMessage(
-                            String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
-                                    message.getType().toString(), userName));
+                Message message = connection.receive();
+                messageDAO.save(message);
+                User author = message.getAuthor();
+                if (message.getType() == MessageType.TEXT) {
+                    String messageText = String.format("%s (%s) : %s", author.getName(), message.getDateTime()
+                            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)),
+                            message.getData());
+                    PRINT_MESSAGE.writeMessage(messageText);
+                    message.setData(messageText);
+                    sendBroadcastMessage(message);
+                } else PRINT_MESSAGE.writeMessage(
+                        String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
+                                message.getType().toString(), author.getName()));
 
             }
 
@@ -214,7 +220,7 @@ public class Server {
                 sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
-                serverMessageLoop(connection, clientName);
+                serverMessageLoop(connection);
             } catch (IOException e) {
                 PRINT_MESSAGE.writeMessage(e.getMessage());
             }

@@ -15,11 +15,11 @@
                 <constraints nullable="false"/>
             </column>
             <column name="data" type="varchar(128)"/>
-            <column name="datetime" type="timestamp">
+            <column name="datetime" type="timestamptz">
                 <constraints nullable="false"/>
             </column>
             <column name="user_id" type="int">
-                <constraints foreignKeyName="messages_user_id_users_id" references="users(id)" deleteCascade="true"/>
+                <constraints foreignKeyName="messages_user_id" references="users(id)" deleteCascade="true"/>
             </column>
         </createTable>
     </changeSet>

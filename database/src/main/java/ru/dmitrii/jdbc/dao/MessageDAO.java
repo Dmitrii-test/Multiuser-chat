@@ -16,8 +16,8 @@ public class MessageDAO implements CRUD<Message>{
 
     @Override
     public int save(Message message) {
-        jdbcTemplate.update("INSERT INTO messages (type, data, datetime, user_id) VALUES(?, ?, ?, ?)",
-                message.getType(), message.getData(), message.getDateTime(), message.getAuthor().getId());
+        jdbcTemplate.update("INSERT INTO messages (type, data, datetime, user_id) VALUES(CAST(? AS ms_type), ?, ?, ?)",
+                message.getType().toString(), message.getData(), message.getDateTime(), message.getAuthor().getId());
         return 0;
     }
 
