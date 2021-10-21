@@ -7,7 +7,7 @@
     <changeSet id="create-table-users" author="Liquibase">
         <sql>CREATE TYPE my_state AS ENUM ('admin','user')</sql>
         <createTable tableName="users">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id_user" type="int" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="name" type="varchar(12)">

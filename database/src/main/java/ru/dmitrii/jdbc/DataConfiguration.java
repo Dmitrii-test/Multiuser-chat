@@ -57,7 +57,7 @@ public class DataConfiguration {
         return new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("users")
                 .usingColumns("name", "password")
-                .usingGeneratedKeyColumns("id");
+                .usingGeneratedKeyColumns("id_user");
     }
 
     @Bean
@@ -65,7 +65,7 @@ public class DataConfiguration {
         return new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("messages")
                 .usingColumns("type", "data", "datetime", "user_id")
-                .usingGeneratedKeyColumns("id");
+                .usingGeneratedKeyColumns("id_message");
     }
 
     @Bean

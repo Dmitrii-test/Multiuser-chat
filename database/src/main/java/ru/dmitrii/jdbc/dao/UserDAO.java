@@ -27,7 +27,7 @@ public class UserDAO implements CRUD<User> {
      */
     @Transactional (readOnly = true)
     public int indexUser(String name) {
-        Integer integer = jdbcTemplate.queryForObject("SELECT id FROM users where name=?", Integer.class, name);
+        Integer integer = jdbcTemplate.queryForObject("SELECT id_user FROM users where name=?", Integer.class, name);
         if (integer==null) return 0;
         return integer;
     }
@@ -39,7 +39,7 @@ public class UserDAO implements CRUD<User> {
      */
     @Transactional (readOnly = true)
     public User show(int i) {
-        User user = jdbcTemplate.queryForObject("SELECT * FROM users WHERE id=?", new UserMapper(), i);
+        User user = jdbcTemplate.queryForObject("SELECT * FROM users WHERE id_user=?", new UserMapper(), i);
         if (user == null) throw new NullPointerException();
         return user;
     }
@@ -89,7 +89,7 @@ public class UserDAO implements CRUD<User> {
      */
     @Transactional
     public void update(int id, User updatedUser) {
-        jdbcTemplate.update("UPDATE users SET name=?, password=? WHERE id=?", updatedUser.getName(),
+        jdbcTemplate.update("UPDATE users SET name=?, password=? WHERE id_user=?", updatedUser.getName(),
                 updatedUser.getPassword(), id);
     }
 
@@ -99,6 +99,6 @@ public class UserDAO implements CRUD<User> {
      */
     @Transactional
     public void delete(int id) {
-        jdbcTemplate.update("DELETE FROM users WHERE id=?", id);
+        jdbcTemplate.update("DELETE FROM users WHERE id_user=?", id);
     }
 }
