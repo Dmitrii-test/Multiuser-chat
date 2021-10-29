@@ -1,8 +1,8 @@
 package ru.dmitrii.client;
 
 
-import utils.printers.ConsolePrinter;
-import utils.printers.PrintMessage;
+import ru.dmitrii.utils.printers.ConsolePrinter;
+import ru.dmitrii.utils.printers.PrintMessage;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;

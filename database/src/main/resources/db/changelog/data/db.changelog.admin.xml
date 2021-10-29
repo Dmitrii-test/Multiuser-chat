@@ -7,7 +7,7 @@
     <changeSet id="create-admin" author="Liquibase">
         <insert tableName="users">
             <column name="name" value="admin"/>
-            <column name="password" value="admin"/>
+            <column name="password" value="$2a$08$UsgCf.tMJTODBLuc2hmxM.lIh7JQ71dULhyelbtZw1kaPS1272.kG"/>
             <column name="role" value="admin"/>
         </insert>
         <insert tableName="users">

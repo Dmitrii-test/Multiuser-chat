@@ -4,20 +4,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import utils.models.User;
+import ru.dmitrii.utils.models.User;
 
 @Component
 public class UserDAO implements CRUD<User> {
 
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert simpleJdbcInsertUsers;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserDAO(JdbcTemplate jdbcTemplate, SimpleJdbcInsert simpleJdbcInsertUsers) {
+    public UserDAO(JdbcTemplate jdbcTemplate, SimpleJdbcInsert simpleJdbcInsertUsers, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.simpleJdbcInsertUsers = simpleJdbcInsertUsers;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -63,9 +66,9 @@ public class UserDAO implements CRUD<User> {
      */
     @Transactional (readOnly = true)
     public boolean checkUser(String name, String password) {
-        Integer count = jdbcTemplate.queryForObject("select count(*) from users WHERE name=? AND password=?",
-                Integer.class, name, password);
-        return count != null && count != 0;
+        String pass = jdbcTemplate.queryForObject("select password from users WHERE name=?",
+                String.class, name);
+        return passwordEncoder.matches(password, pass);
     }
 
     /**
@@ -77,7 +80,7 @@ public class UserDAO implements CRUD<User> {
     public int save(User user) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("name", user.getName())
-                .addValue("password", user.getPassword());
+                .addValue("password", passwordEncoder.encode(user.getPassword()));
         Number id = simpleJdbcInsertUsers.executeAndReturnKey(params);
         return id.intValue();
     }

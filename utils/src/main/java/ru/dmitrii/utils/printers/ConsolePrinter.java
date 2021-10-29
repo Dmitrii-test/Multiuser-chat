@@ -1,4 +1,4 @@
-package utils.printers;
+package ru.dmitrii.utils.printers;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -2,8 +2,8 @@ package ru.dmitrii.jdbc.dao;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
-import utils.models.Message;
-import utils.models.MessageType;
+import ru.dmitrii.utils.models.Message;
+import ru.dmitrii.utils.models.MessageType;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

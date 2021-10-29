@@ -1,7 +1,7 @@
 package ru.dmitrii.jdbc.dao;
 
 import org.springframework.jdbc.core.RowMapper;
-import utils.models.User;
+import ru.dmitrii.utils.models.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

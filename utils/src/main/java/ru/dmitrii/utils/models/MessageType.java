@@ -1,4 +1,4 @@
-package utils.models;
+package ru.dmitrii.utils.models;
 
 public enum MessageType {
     NAME_REQUEST,

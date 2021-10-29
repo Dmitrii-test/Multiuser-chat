@@ -1,4 +1,4 @@
-package utils.models;
+package ru.dmitrii.utils.models;
 
 import java.io.Serializable;
 import java.util.List;
@@ -63,8 +63,6 @@ public class User implements Serializable {
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+                ", name='" + name;
     }
 }

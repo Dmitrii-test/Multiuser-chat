@@ -1,4 +1,4 @@
-package utils.printers;
+package ru.dmitrii.utils.printers;
 
 public interface PrintMessage {
 

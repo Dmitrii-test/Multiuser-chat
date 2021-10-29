@@ -1,4 +1,4 @@
-package utils.models;
+package ru.dmitrii.utils.models;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

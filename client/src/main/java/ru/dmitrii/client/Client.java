@@ -1,11 +1,12 @@
 package ru.dmitrii.client;
 
-import utils.Connection;
-import utils.models.Message;
-import utils.models.MessageType;
-import utils.models.User;
-import utils.printers.ConsolePrinter;
-import utils.printers.PrintMessage;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import ru.dmitrii.utils.Connection;
+import ru.dmitrii.utils.UtilsConfiguration;
+import ru.dmitrii.utils.models.Message;
+import ru.dmitrii.utils.models.MessageType;
+import ru.dmitrii.utils.models.User;
+import ru.dmitrii.utils.printers.PrintMessage;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -13,9 +14,16 @@ import java.net.Socket;
 public class Client {
     protected Connection connection;
     private volatile boolean clientConnected = false;
-    private static final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
+    private final PrintMessage printMessage;
     private User currentUser;
-    private static final User unknown = new User(2,"unknown", "");
+    private static final User UNKNOWN = new User(2,"unknown", "");
+
+    public Client() {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(UtilsConfiguration.class);
+        context.refresh();
+        printMessage = context.getBean(PrintMessage.class);
+    }
 
     public static void main(String[] args) {
         Client client = new Client();
@@ -27,8 +35,8 @@ public class Client {
      * @return String
      */
     protected String getServerAddress() {
-        PRINT_MESSAGE.writeMessage("Введите адресс сервера:");
-        return PRINT_MESSAGE.readString();
+        printMessage.writeMessage("Введите адресс сервера:");
+        return printMessage.readString();
     }
 
     /**
@@ -36,8 +44,8 @@ public class Client {
      * @return int
      */
     protected int getServerPort() {
-        PRINT_MESSAGE.writeMessage("Введите порт сервера:");
-        return PRINT_MESSAGE.readInt();
+        printMessage.writeMessage("Введите порт сервера:");
+        return printMessage.readInt();
     }
 
     /**
@@ -45,8 +53,8 @@ public class Client {
      * @return String
      */
     protected String getUserName() {
-        PRINT_MESSAGE.writeMessage("Введите имя пользователя:");
-        return PRINT_MESSAGE.readString();
+        printMessage.writeMessage("Введите имя пользователя:");
+        return printMessage.readString();
     }
 
     /**
@@ -54,8 +62,8 @@ public class Client {
      * @return String
      */
     protected String getPassword() {
-        PRINT_MESSAGE.writeMessage("Введите пароль:");
-        return PRINT_MESSAGE.readString();
+        printMessage.writeMessage("Введите пароль:");
+        return printMessage.readString();
     }
 
     /**
@@ -83,19 +91,19 @@ public class Client {
                 // ожидаем окончания соединения с сервером
                 this.wait();
             } catch (InterruptedException e) {
-                PRINT_MESSAGE.writeMessage("Произошла ошибка ожидания");
+                printMessage.writeMessage("Произошла ошибка ожидания");
                 return;
             }
         }
-        if (clientConnected) PRINT_MESSAGE.writeMessage("Соединение установлено.\n" +
+        if (clientConnected) printMessage.writeMessage("Соединение установлено.\n" +
                 "Для выхода наберите команду 'exit'.");
-        else PRINT_MESSAGE.writeMessage("Произошла ошибка во время работы клиента.");
+        else printMessage.writeMessage("Произошла ошибка во время работы клиента.");
         while (clientConnected) {
-            String text = PRINT_MESSAGE.readString();
+            String text = printMessage.readString();
             if (text.equals("exit")) break;
             sendTextMessage(text);
         }
-        PRINT_MESSAGE.writeMessage("Выключение");
+        printMessage.writeMessage("Выключение");
     }
 
     /**
@@ -107,9 +115,11 @@ public class Client {
             try {
                 Socket socket = new Socket(getServerAddress(), getServerPort());
                 connection = new Connection(socket);
+                System.out.println(connection);
                 clientHandshake();
                 clientMessageLoop();
             } catch (IOException e) {
+                e.printStackTrace();
                 notifyStatusConnection(false);
             }
         }
@@ -119,7 +129,7 @@ public class Client {
          * @param message String
          */
         protected void processIncomingMessage(String message) {
-            PRINT_MESSAGE.writeMessage(message);
+            printMessage.writeMessage(message);
         }
 
         /**
@@ -127,7 +137,7 @@ public class Client {
          * @param userName String
          */
         protected void informAddUser(String userName) {
-            PRINT_MESSAGE.writeMessage(userName + " присоединился к чату");
+            printMessage.writeMessage(userName + " присоединился к чату");
         }
 
         /**
@@ -135,7 +145,7 @@ public class Client {
          * @param userName String
          */
         protected void informDeleteUser(String userName) {
-            PRINT_MESSAGE.writeMessage(userName + " покинул чат");
+            printMessage.writeMessage(userName + " покинул чат");
         }
 
         /**
@@ -159,13 +169,13 @@ public class Client {
             while (!clientConnected) {
                 Message message = connection.receive();
                 if (message.getType() == MessageType.NAME_REQUEST) {
-                    PRINT_MESSAGE.writeMessage(message.getData());
+                    printMessage.writeMessage(message.getData());
                     clientName = getUserName();
                     password = getPassword();
-                    connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, unknown));
+                    connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, UNKNOWN));
                 } else if (message.getType() == MessageType.NAME_ACCEPTED) {
                     int index = Integer.parseInt(message.getData());
-                    PRINT_MESSAGE.writeMessage("Получен индекс " + index);
+                    printMessage.writeMessage("Получен индекс " + index);
                     currentUser = new User(index, clientName, password);
                     notifyStatusConnection(true);
                 } else throw new IOException("Unexpected MessageType");
@@ -190,7 +200,7 @@ public class Client {
                         informDeleteUser(message.getData());
                         break;
                     case SERVER_DISCONNECT: {
-                        PRINT_MESSAGE.writeMessage(message.getData());
+                        printMessage.writeMessage(message.getData());
                         notifyStatusConnection(false);
                         break;
                     }

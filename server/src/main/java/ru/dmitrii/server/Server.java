@@ -1,15 +1,17 @@
-package ru.dmitrii.servet;
+package ru.dmitrii.server;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.dmitrii.jdbc.DataConfiguration;
 import ru.dmitrii.jdbc.dao.MessageDAO;
 import ru.dmitrii.jdbc.dao.UserDAO;
-import utils.Connection;
-import utils.models.Message;
-import utils.models.MessageType;
-import utils.models.User;
-import utils.printers.ConsolePrinter;
-import utils.printers.PrintMessage;
+import ru.dmitrii.utils.Connection;
+import ru.dmitrii.utils.UtilsConfiguration;
+import ru.dmitrii.utils.models.Message;
+import ru.dmitrii.utils.models.MessageType;
+import ru.dmitrii.utils.models.User;
+import ru.dmitrii.utils.printers.ConsolePrinter;
+import ru.dmitrii.utils.printers.PrintMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -25,20 +27,22 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Server {
     static private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<>();
     static private final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
-    static private final List<Handler> handlerList = new ArrayList<>();
-    static private final User server = new User("server", "server");
+    static private final List<Handler> HANDLER_LIST = new ArrayList<>();
+    static private User serverUser;
     static private UserDAO userDAO;
     static private MessageDAO messageDAO;
-
+    static private PasswordEncoder passwordEncoder;
 
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.register(DataConfiguration.class);
+        context.register(DataConfiguration.class, UtilsConfiguration.class);
         context.refresh();
         userDAO = context.getBean(UserDAO.class);
         messageDAO = context.getBean(MessageDAO.class);
-        if (userDAO.checkUser(server.getName())) userDAO.save(server);
-        server.setId(userDAO.indexUser(server.getName()));
+        passwordEncoder = context.getBean(PasswordEncoder.class);
+        serverUser = new User("server","server");
+        if (userDAO.checkUser(serverUser.getName())) userDAO.save(serverUser);
+        serverUser.setId(userDAO.indexUser(serverUser.getName()));
         PRINT_MESSAGE.writeMessage("Введите порт на котором будет работать чат-сервер:");
         try (ServerSocket serverSocket = new ServerSocket(PRINT_MESSAGE.readInt())) {
             PRINT_MESSAGE.writeMessage("Сервер запущен");
@@ -70,7 +74,7 @@ public class Server {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Handler handlerSocket = new Handler(serverSocket.accept());
-                    handlerList.add(handlerSocket);
+                    HANDLER_LIST.add(handlerSocket);
                     handlerSocket.start();
                 } catch (SocketException r) {
                     PRINT_MESSAGE.writeMessage("Остановка сервера");
@@ -91,14 +95,10 @@ public class Server {
      * @throws IOException IOException
      */
     private static void stopServer(ServerSocket serverSocket, Thread threadSocket) throws IOException {
-        handlerList.forEach(Thread::interrupt);
+        HANDLER_LIST.forEach(Thread::interrupt);
         CONNECTION_MAP.forEach((k, v) -> {
-            try {
-                v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера", server));
-                v.close();
-            } catch (IOException e) {
-                PRINT_MESSAGE.writeMessage("Ошибка закрытия соединения " + e.getMessage());
-            }
+            v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера", serverUser));
+            v.close();
         });
         serverSocket.close();
         threadSocket.interrupt();
@@ -138,30 +138,30 @@ public class Server {
             String password = "";
             String wrong = "";
             while (!accepted) {
-                connection.send(new Message(MessageType.NAME_REQUEST, wrong, server));
+                connection.send(new Message(MessageType.NAME_REQUEST, wrong, serverUser));
                 Message message = connection.receive();
                 messageDAO.save(message);
                 if (message.getType() == MessageType.USER_NAME) {
                     String[] split = message.getData().split(" :: ");
                     name = split[0];
                     password = split[1];
-                    if (!name.isEmpty() && !password.isEmpty()) {
+                    if (name.length() > 3 &&  name.length() < 24 && password.length() > 3) {
                         if (userDAO.checkUser(name) && CONNECTION_MAP.get(name) == null) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.save(new User(name, password));
-                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), server));
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), serverUser));
                             accepted = true;
                         }
                         if (userDAO.checkUser(name, password)) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.indexUser(name);
-                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), server));
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), serverUser));
                             accepted = true;
                         }
                         wrong = "Не правильный пользователь или пароль";
                         continue;
                     }
-                    wrong = "Пустой пользователь или пароль";
+                    wrong = "Не допустимая длина имени пользователя или пароля";
                 }
             }
             return name;
@@ -176,7 +176,7 @@ public class Server {
         private void notifyAddUser(Connection connection, String userName) {
             for (String clientName : CONNECTION_MAP.keySet()) {
                 if (!clientName.equals(userName)) {
-                    connection.send(new Message(MessageType.USER_ADDED, clientName, server));
+                    connection.send(new Message(MessageType.USER_ADDED, clientName, serverUser));
                 }
             }
         }
@@ -216,7 +216,7 @@ public class Server {
             try {
                 connection = new Connection(socket);
                 clientName = serverHandshake(connection);
-                Message messageAdd = new Message(MessageType.USER_ADDED, clientName, server);
+                Message messageAdd = new Message(MessageType.USER_ADDED, clientName, serverUser);
                 sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
@@ -226,7 +226,7 @@ public class Server {
             }
             if (clientName != null) {
                 CONNECTION_MAP.remove(clientName);
-                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName, server));
+                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName, serverUser));
             }
             PRINT_MESSAGE.writeMessage(String.format("Соединение с удаленным адресом (%s) закрыто.", socket.getRemoteSocketAddress()));
         }

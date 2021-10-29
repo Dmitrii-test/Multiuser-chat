@@ -3,7 +3,7 @@ package ru.dmitrii.jdbc.dao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import utils.models.Message;
+import ru.dmitrii.utils.models.Message;
 
 @Component
 public class MessageDAO implements CRUD<Message>{

@@ -10,10 +10,10 @@
             <column name="id_user" type="int" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
-            <column name="name" type="varchar(12)">
+            <column name="name" type="varchar(24)">
                 <constraints unique="true" nullable="false"/>
             </column>
-            <column name="password" type="varchar(24)">
+            <column name="password" type="varchar(80)">
                 <constraints nullable="false"/>
             </column>
             <column name="role" type="my_state" defaultValue="user">
