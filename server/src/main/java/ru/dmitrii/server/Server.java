@@ -137,6 +137,7 @@ public class Server {
             String name = "";
             String password = "";
             String wrong = "";
+            connection.sendKey(new Message(MessageType.CONNECT, "", serverUser));
             while (!accepted) {
                 connection.send(new Message(MessageType.NAME_REQUEST, wrong, serverUser));
                 Message message = connection.receive();

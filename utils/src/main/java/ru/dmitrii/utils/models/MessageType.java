@@ -1,6 +1,7 @@
 package ru.dmitrii.utils.models;
 
 public enum MessageType {
+    CONNECT,
     NAME_REQUEST,
     USER_NAME,
     NAME_ACCEPTED,

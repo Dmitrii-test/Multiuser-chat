@@ -119,7 +119,7 @@ public class Client {
                 clientHandshake();
                 clientMessageLoop();
             } catch (IOException e) {
-                e.printStackTrace();
+                printMessage.writeMessage("Ошибка связи " + e.getMessage());
                 notifyStatusConnection(false);
             }
         }
@@ -168,6 +168,7 @@ public class Client {
             String password = "";
             while (!clientConnected) {
                 Message message = connection.receive();
+                if (message.getType() == MessageType.CONNECT) continue;
                 if (message.getType() == MessageType.NAME_REQUEST) {
                     printMessage.writeMessage(message.getData());
                     clientName = getUserName();

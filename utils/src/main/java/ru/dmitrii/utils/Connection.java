@@ -6,12 +6,15 @@ import ru.dmitrii.utils.printers.PrintMessage;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import java.util.Base64;
 
 
 public class Connection implements Closeable {
@@ -27,56 +30,70 @@ public class Connection implements Closeable {
         this.socket = socket;
         printMessage = new ConsolePrinter();
         try {
-            key = new SecretKeySpec(new byte[] {'0','2','3','4','5','6','7','8','9','1','2','3','4','5','6','7'},"AES" );
-            System.out.println(Arrays.toString(key.getEncoded()));
-            cipherOut = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipherOut.init(Cipher.ENCRYPT_MODE, key);
-            cipherIn = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipherIn.init(Cipher.DECRYPT_MODE, key);
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipherOut);
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipherIn);
-            out = new ObjectOutputStream(new BufferedOutputStream(cipherOutputStream));
-            in = new ObjectInputStream(new BufferedInputStream(cipherInputStream));
-
-
-        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+            cipherOut = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipherIn = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             printMessage.writeMessage("Ошибка создания Connection " + e.getMessage());
 
         }
     }
 
     /**
-     * Метод отправки Message
-     *
-     * @param message Message
+     * Метод отправки ключа
      */
-    public synchronized void send(Message message) {
+    public synchronized void sendKey(Message message) {
+        if (key == null) {
             try {
-                cipherOut.init(Cipher.ENCRYPT_MODE, key);
-                SealedObject sealedObject = new SealedObject(message, cipherOut);
-                out.writeObject(sealedObject);
-            } catch (IOException | IllegalBlockSizeException | InvalidKeyException e) {
-                printMessage.writeMessage("Ошибка отправки сообщения " + e.getMessage());
+                String genKey = genKey();
+                message.setData(genKey);
+                out.writeObject(message);
+            } catch (IOException | NoSuchAlgorithmException e) {
+                printMessage.writeMessage("Ошибка отправки ключа " + e.getMessage());
             }
+        }
     }
 
     /**
-     * Метод получения Message
+     * Метод отправки зашифрованого Message
+     *
+     * @param message Message
+     */
+    public void send(Message message) {
+        try {
+            System.out.println(message);
+            cipherOut.init(Cipher.ENCRYPT_MODE, key);
+            SealedObject sealedObject = new SealedObject(message, cipherOut);
+            out.writeObject(sealedObject);
+        } catch (IOException | IllegalBlockSizeException | InvalidKeyException e) {
+            printMessage.writeMessage("Ошибка отправки сообщения " + e.getMessage());
+        }
+    }
+
+
+    /**
+     * Метод получения зашифрованого Message
      *
      * @return Message
      */
     public synchronized Message receive() throws IOException {
-            Message message = null;
-            try {
+        Message message = null;
+        try {
+            if (key == null) {
+                message = (Message) in.readObject();
+                System.out.println(message.getData());
+                key = convertStringToSecretKey(message.getData());
+            }
+            else {
                 cipherIn.init(Cipher.DECRYPT_MODE, key);
-                System.out.println("Получение ");
                 SealedObject sealedObject = (SealedObject) in.readObject();
                 message = (Message) sealedObject.getObject(cipherIn);
-                ;
-            } catch (ClassNotFoundException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException e) {
-                printMessage.writeMessage("Ошибка получения Message " + e.getMessage());
             }
-            return message;
+        } catch (ClassNotFoundException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException e) {
+            printMessage.writeMessage("Ошибка получения Message " + e.getMessage());
+        }
+        return message;
     }
 
     /**
@@ -101,4 +118,32 @@ public class Connection implements Closeable {
             printMessage.writeMessage("Ошибка закрытия Connection " + e.getMessage());
         }
     }
+
+    /**
+     * Метод генерации ключа
+     *
+     * @return String
+     * @throws NoSuchAlgorithmException NoSuchAlgorithmException
+     */
+    private String genKey() throws NoSuchAlgorithmException {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(192);
+        key = keyGenerator.generateKey();
+        byte[] rawData = key.getEncoded();
+        return Base64.getEncoder().encodeToString(rawData);
+    }
+
+    /**
+     * Метод получения ключа из строки
+     *
+     * @param encodedKey String
+     * @return SecretKey
+     */
+
+    public SecretKey convertStringToSecretKey(String encodedKey) {
+        byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
+        SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+        return originalKey;
+    }
+
 }
