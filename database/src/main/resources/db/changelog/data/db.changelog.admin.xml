@@ -11,6 +11,16 @@
             <column name="role" value="admin"/>
         </insert>
         <insert tableName="users">
+            <column name="name" value="server"/>
+            <column name="password" value="$2a$08$YtUvaCstu1Pv.w50uV/utOs.ooMmdizP9BdLSgzzzqmPEzSk3Oe6a"/>
+            <column name="role" value="user"/>
+        </insert>
+        <insert tableName="users">
+            <column name="name" value="bot"/>
+            <column name="password" value="$2a$08$Hb9s.odknEurrq34TqHwBeorFp4zUQTovR6p/.myAYnH1Cq9TptgK"/>
+            <column name="role" value="user"/>
+        </insert>
+        <insert tableName="users">
             <column name="name" value="unknown"/>
             <column name="password" value=""/>
             <column name="role" value="user"/>

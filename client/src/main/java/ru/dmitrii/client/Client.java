@@ -15,7 +15,7 @@ public class Client {
     protected Connection connection;
     private volatile boolean clientConnected = false;
     private final PrintMessage printMessage;
-    private User currentUser;
+    User currentUser;
     private static final User UNKNOWN = new User(2,"unknown", "");
 
     public Client() {
@@ -115,7 +115,6 @@ public class Client {
             try {
                 Socket socket = new Socket(getServerAddress(), getServerPort());
                 connection = new Connection(socket);
-                System.out.println(connection);
                 clientHandshake();
                 clientMessageLoop();
             } catch (IOException e) {
@@ -176,10 +175,9 @@ public class Client {
                     connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, UNKNOWN));
                 } else if (message.getType() == MessageType.NAME_ACCEPTED) {
                     int index = Integer.parseInt(message.getData());
-                    printMessage.writeMessage("Получен индекс " + index);
                     currentUser = new User(index, clientName, password);
                     notifyStatusConnection(true);
-                } else throw new IOException("Unexpected MessageType");
+                } else throw new IOException("Ошибка типа сообщения при получении имени и пароля");
             }
         }
 
@@ -190,6 +188,7 @@ public class Client {
         protected void clientMessageLoop() throws IOException{
             while (clientConnected) {
                 Message message = connection.receive();
+                System.out.println(message);
                 switch (message.getType()) {
                     case TEXT:
                         processIncomingMessage(message.getData());
@@ -206,7 +205,7 @@ public class Client {
                         break;
                     }
                     default:
-                        throw new IOException("Unexpected MessageType");
+                        throw new IOException("Ошибка типа сообщения в чате");
                 }
             }
         }

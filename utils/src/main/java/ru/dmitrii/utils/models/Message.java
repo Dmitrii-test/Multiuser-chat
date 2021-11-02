@@ -65,4 +65,15 @@ public class Message implements Serializable {
     public void setAuthor(User author) {
         this.author = author;
     }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "id=" + id +
+                ", type=" + type +
+                ", data='" + data + '\'' +
+                ", dateTime=" + dateTime +
+                ", author=" + author +
+                '}';
+    }
 }

@@ -1,6 +1,7 @@
 package ru.dmitrii.client;
 
 
+import ru.dmitrii.utils.models.User;
 import ru.dmitrii.utils.printers.ConsolePrinter;
 import ru.dmitrii.utils.printers.PrintMessage;
 
@@ -14,6 +15,7 @@ public class BotClient extends Client {
 
     public static void main(String[] args) {
         BotClient botClient = new BotClient();
+        botClient.currentUser = new User(3,"bot", "bot_user");
         botClient.run();
     }
 
@@ -24,7 +26,12 @@ public class BotClient extends Client {
 
     @Override
     protected String getUserName() {
-        return "date_bot_" + ((int) (Math.random() * 100));
+        return currentUser.getName();
+    }
+
+    @Override
+    protected String getPassword() {
+        return currentUser.getPassword();
     }
 
     public class BotSocketThread extends SocketThread {
@@ -42,7 +49,7 @@ public class BotClient extends Client {
                 String dateformat = null;
                 switch (strings[1].toLowerCase(Locale.ROOT)) {
                     case "дата":
-                        dateformat = "d.MM.YYYY";
+                        dateformat = "dd.MM.YYYY";
                         break;
                     case "день":
                         dateformat = "d";
@@ -68,7 +75,7 @@ public class BotClient extends Client {
                 }
                 if (dateformat != null) {
                     String reply = String.format("Информация для %s: %s",
-                            strings[0],
+                            strings[0].substring(0, strings[0].indexOf(" ")),
                             new SimpleDateFormat(dateformat).format(Calendar.getInstance().getTime())
                     );
                     sendTextMessage(reply);

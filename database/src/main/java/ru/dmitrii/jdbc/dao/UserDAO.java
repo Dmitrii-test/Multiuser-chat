@@ -53,7 +53,7 @@ public class UserDAO implements CRUD<User> {
      * @return boolean
      */
     @Transactional (readOnly = true)
-    public boolean checkUser(String name) {
+    public boolean checkNoUser(String name) {
         Integer count = jdbcTemplate.queryForObject("select count(*) from users WHERE name=?",Integer.class, name);
         return count == null || count == 0;
     }

@@ -1,7 +1,6 @@
 package ru.dmitrii.server;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.dmitrii.jdbc.DataConfiguration;
 import ru.dmitrii.jdbc.dao.MessageDAO;
 import ru.dmitrii.jdbc.dao.UserDAO;
@@ -28,10 +27,9 @@ public class Server {
     static private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<>();
     static private final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
     static private final List<Handler> HANDLER_LIST = new ArrayList<>();
-    static private User serverUser;
+    static private final User SERVER_USER = new User(2, "server", "server");;
     static private UserDAO userDAO;
     static private MessageDAO messageDAO;
-    static private PasswordEncoder passwordEncoder;
 
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -39,10 +37,6 @@ public class Server {
         context.refresh();
         userDAO = context.getBean(UserDAO.class);
         messageDAO = context.getBean(MessageDAO.class);
-        passwordEncoder = context.getBean(PasswordEncoder.class);
-        serverUser = new User("server","server");
-        if (userDAO.checkUser(serverUser.getName())) userDAO.save(serverUser);
-        serverUser.setId(userDAO.indexUser(serverUser.getName()));
         PRINT_MESSAGE.writeMessage("Введите порт на котором будет работать чат-сервер:");
         try (ServerSocket serverSocket = new ServerSocket(PRINT_MESSAGE.readInt())) {
             PRINT_MESSAGE.writeMessage("Сервер запущен");
@@ -97,7 +91,7 @@ public class Server {
     private static void stopServer(ServerSocket serverSocket, Thread threadSocket) throws IOException {
         HANDLER_LIST.forEach(Thread::interrupt);
         CONNECTION_MAP.forEach((k, v) -> {
-            v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера", serverUser));
+            v.send(new Message(MessageType.SERVER_DISCONNECT, "Выключение сервера", SERVER_USER));
             v.close();
         });
         serverSocket.close();
@@ -137,32 +131,36 @@ public class Server {
             String name = "";
             String password = "";
             String wrong = "";
-            connection.sendKey(new Message(MessageType.CONNECT, "", serverUser));
+            connection.sendKey(new Message(MessageType.CONNECT, "", SERVER_USER));
             while (!accepted) {
-                connection.send(new Message(MessageType.NAME_REQUEST, wrong, serverUser));
+                connection.send(new Message(MessageType.NAME_REQUEST, wrong, SERVER_USER));
                 Message message = connection.receive();
                 messageDAO.save(message);
                 if (message.getType() == MessageType.USER_NAME) {
                     String[] split = message.getData().split(" :: ");
                     name = split[0];
                     password = split[1];
-                    if (name.length() > 3 &&  name.length() < 24 && password.length() > 3) {
-                        if (userDAO.checkUser(name) && CONNECTION_MAP.get(name) == null) {
+                    if (name.length() > 2 && name.length() < 24 && password.length() > 3) {
+                        // Проверяем что пользователя нет
+                        if (userDAO.checkNoUser(name) && CONNECTION_MAP.get(name) == null) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.save(new User(name, password));
-                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), serverUser));
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), SERVER_USER));
                             accepted = true;
+                            continue;
                         }
-                        if (userDAO.checkUser(name, password)) {
+                        //Проверяем совпадает ли пользователь и пароль
+                        else if (userDAO.checkUser(name, password)) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.indexUser(name);
-                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), serverUser));
+                            connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), SERVER_USER));
                             accepted = true;
                         }
-                        wrong = "Не правильный пользователь или пароль";
+                        wrong = "Не правильный пароль пользователя";
                         continue;
                     }
-                    wrong = "Не допустимая длина имени пользователя или пароля";
+                    wrong = "Не допустимая длина имени пользователя или пароля(имя пользвателя не меньше 3 символов, " +
+                            "пароль не меньше 4 символов)";
                 }
             }
             return name;
@@ -177,7 +175,7 @@ public class Server {
         private void notifyAddUser(Connection connection, String userName) {
             for (String clientName : CONNECTION_MAP.keySet()) {
                 if (!clientName.equals(userName)) {
-                    connection.send(new Message(MessageType.USER_ADDED, clientName, serverUser));
+                    connection.send(new Message(MessageType.USER_ADDED, clientName, SERVER_USER));
                 }
             }
         }
@@ -195,7 +193,7 @@ public class Server {
                 User author = message.getAuthor();
                 if (message.getType() == MessageType.TEXT) {
                     String messageText = String.format("%s (%s) : %s", author.getName(), message.getDateTime()
-                            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)),
+                                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)),
                             message.getData());
                     PRINT_MESSAGE.writeMessage(messageText);
                     message.setData(messageText);
@@ -217,7 +215,7 @@ public class Server {
             try {
                 connection = new Connection(socket);
                 clientName = serverHandshake(connection);
-                Message messageAdd = new Message(MessageType.USER_ADDED, clientName, serverUser);
+                Message messageAdd = new Message(MessageType.USER_ADDED, clientName, SERVER_USER);
                 sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
@@ -227,7 +225,7 @@ public class Server {
             }
             if (clientName != null) {
                 CONNECTION_MAP.remove(clientName);
-                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName, serverUser));
+                sendBroadcastMessage(new Message(MessageType.USER_REMOVED, clientName, SERVER_USER));
             }
             PRINT_MESSAGE.writeMessage(String.format("Соединение с удаленным адресом (%s) закрыто.", socket.getRemoteSocketAddress()));
         }
