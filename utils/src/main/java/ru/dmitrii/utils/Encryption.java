@@ -44,4 +44,60 @@ public class Encryption {
         byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
         return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
     }
+
+
+    /**
+     * Метод шифрования строки шифром Цезаря
+     *
+     * @param str String
+     * @param k int Количество сдвигов
+     * @return String
+     */
+    protected static String encryptionString(String str, int k) {
+        return passString(str, k);
+    }
+
+
+    /**
+     * Метод расшифрования строки шифром Цезаря
+     *
+     * @param str String
+     * @param n int Количество сдвигов
+     * @return SecretKey
+     */
+    protected static String decryptString(String str, int n) {
+        int k=Integer.parseInt("-"+n);
+        return passString(str, k);
+    }
+
+    /**
+     * Обход строки шифром цезаря
+     * @param str String
+     * @param k int Количество сдвигов
+     * @return String
+     */
+    private static String passString(String str, int k) {
+        StringBuilder string= new StringBuilder();
+        for(int i=0;i<str.length();i++) {
+            char c=str.charAt(i);
+            if(c>='a'&&c<='z')// Если символ в строке строчный
+            {
+                c+=k%26;// мобильный ключ% 26 бит
+                if(c<'a')
+                    c+=26;// слева налево
+                if(c>'z')
+                    c-=26;// направо
+            }else if(c>='A'&&c<='Z')// Если символ в строке в верхнем регистре
+            {
+                c+=k%26;// мобильный ключ% 26 бит
+                if(c<'A')
+                    c+=26;// слева налево
+                if(c>'Z')
+                    c-=26;// направо
+            }
+            string.append(c);
+        }
+        return string.toString();
+    }
+
 }

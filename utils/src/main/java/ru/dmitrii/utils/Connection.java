@@ -39,7 +39,8 @@ public class Connection implements Closeable {
             try {
                 key = Encryption.genKey();
                 initCipher();
-                message.setData(Encryption.convertSecretKeyToString(key));
+                String data = Encryption.convertSecretKeyToString(key);
+                message.setData(Encryption.encryptionString(data, 4));
                 synchronized (out) {
                     out.writeObject(message);
                 }
@@ -56,6 +57,7 @@ public class Connection implements Closeable {
      */
     public void send(Message message) {
         try {
+            // создам объект и защищаем его конфиденциальность
             SealedObject sealedObject = new SealedObject(message, cipherOut);
             synchronized (out) {
                 out.writeObject(sealedObject);
@@ -77,11 +79,13 @@ public class Connection implements Closeable {
             if (key == null) {
                 synchronized (in) {
                     message = (Message) in.readObject();
-                    key = Encryption.convertStringToSecretKey(message.getData());
+                    String data = message.getData();
+                    key = Encryption.convertStringToSecretKey(Encryption.decryptString(data,4));
                 }
                 initCipher();
             } else {
                 synchronized (in) {
+                    // получаем защищенный объект
                     SealedObject sealedObject = (SealedObject) in.readObject();
                     message = (Message) sealedObject.getObject(cipherIn);
                 }
