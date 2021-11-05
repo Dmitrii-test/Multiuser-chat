@@ -188,7 +188,6 @@ public class Client {
         protected void clientMessageLoop() throws IOException{
             while (clientConnected) {
                 Message message = connection.receive();
-                System.out.println(message);
                 switch (message.getType()) {
                     case TEXT:
                         processIncomingMessage(message.getData());

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
@@ -181,6 +182,16 @@ public class Server {
         }
 
         /**
+         * Отправить подключившемуся пользователю сообщения за последние два часа
+         * @param connection Connection
+         */
+        private void sendLastMessages(Connection connection) {
+            List<Message> messages = messageDAO.showMessageTime();
+            messages.forEach(n -> n.setData(getStringMessage(n)));
+            messages.forEach(connection::send);
+        }
+
+        /**
          * Цикл приема и обработки сообщений Text
          *
          * @param connection Connection
@@ -190,20 +201,28 @@ public class Server {
             while (!Thread.currentThread().isInterrupted()) {
                 Message message = connection.receive();
                 messageDAO.save(message);
-                User author = message.getAuthor();
                 if (message.getType() == MessageType.TEXT) {
-                    String messageText = String.format("%s (%s) : %s", author.getName(), message.getDateTime()
-                                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)),
-                            message.getData());
+                    String messageText = getStringMessage(message);
                     PRINT_MESSAGE.writeMessage(messageText);
                     message.setData(messageText);
                     sendBroadcastMessage(message);
                 } else PRINT_MESSAGE.writeMessage(
                         String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
-                                message.getType().toString(), author.getName()));
+                                message.getType().toString(), message.getAuthor()));
 
             }
 
+        }
+
+        /**
+         * Преобразование сообщения
+         * @param message Message
+         * @return String
+         */
+        private String getStringMessage(Message message) {
+            return String.format("%s (%s) : %s", message.getAuthor().getName(), message.getDateTime()
+                                            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT,
+                                                    FormatStyle.SHORT)), message.getData());
         }
 
         @Override
@@ -219,6 +238,7 @@ public class Server {
                 sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
+                sendLastMessages(connection);
                 serverMessageLoop(connection);
             } catch (IOException e) {
                 PRINT_MESSAGE.writeMessage(e.getMessage());
@@ -229,6 +249,5 @@ public class Server {
             }
             PRINT_MESSAGE.writeMessage(String.format("Соединение с удаленным адресом (%s) закрыто.", socket.getRemoteSocketAddress()));
         }
-
     }
 }
