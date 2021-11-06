@@ -28,7 +28,8 @@ public class Server {
     static private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<>();
     static private final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
     static private final List<Handler> HANDLER_LIST = new ArrayList<>();
-    static private final User SERVER_USER = new User(2, "server", "server");;
+    static private final User SERVER_USER = new User(2, "server", "server");
+    ;
     static private UserDAO userDAO;
     static private MessageDAO messageDAO;
 
@@ -132,15 +133,24 @@ public class Server {
             String name = "";
             String password = "";
             String wrong = "";
+            String error = "Превышено допустимое количество попыток попыток ввода пароля";
             connection.sendKey(new Message(MessageType.CONNECT, "", SERVER_USER));
+            int count = 0;
             while (!accepted) {
+                //Проверяем количество ввода пароля
+                if (count >= 3) {
+                    connection.send(new Message(MessageType.SERVER_DISCONNECT, error, SERVER_USER));
+                    connection.close();
+                    break;
+                }
+                // Запрашиваем пароль
                 connection.send(new Message(MessageType.NAME_REQUEST, wrong, SERVER_USER));
                 Message message = connection.receive();
                 messageDAO.save(message);
                 if (message.getType() == MessageType.USER_NAME) {
                     String[] split = message.getData().split(" :: ");
-                    name = split[0];
-                    password = split[1];
+                    name = split[0].trim();
+                    password = split[1].trim();
                     if (name.length() > 2 && name.length() < 24 && password.length() > 3) {
                         // Проверяем что пользователя нет
                         if (userDAO.checkNoUser(name) && CONNECTION_MAP.get(name) == null) {
@@ -158,6 +168,7 @@ public class Server {
                             accepted = true;
                         }
                         wrong = "Не правильный пароль пользователя";
+                        count++;
                         continue;
                     }
                     wrong = "Не допустимая длина имени пользователя или пароля(имя пользвателя не меньше 3 символов, " +
@@ -183,6 +194,7 @@ public class Server {
 
         /**
          * Отправить подключившемуся пользователю сообщения за последние два часа
+         *
          * @param connection Connection
          */
         private void sendLastMessages(Connection connection) {
@@ -216,13 +228,14 @@ public class Server {
 
         /**
          * Преобразование сообщения
+         *
          * @param message Message
          * @return String
          */
         private String getStringMessage(Message message) {
             return String.format("%s (%s) : %s", message.getAuthor().getName(), message.getDateTime()
-                                            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT,
-                                                    FormatStyle.SHORT)), message.getData());
+                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT,
+                            FormatStyle.SHORT)), message.getData());
         }
 
         @Override

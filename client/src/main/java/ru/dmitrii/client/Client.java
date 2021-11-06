@@ -16,7 +16,7 @@ public class Client {
     private volatile boolean clientConnected = false;
     private final PrintMessage printMessage;
     User currentUser;
-    private static final User UNKNOWN = new User(2,"unknown", "");
+    private static final User UNKNOWN = new User(2, "unknown", "");
 
     public Client() {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -32,6 +32,7 @@ public class Client {
 
     /**
      * Получение адресса сервера
+     *
      * @return String
      */
     protected String getServerAddress() {
@@ -41,6 +42,7 @@ public class Client {
 
     /**
      * Получение порта сервера
+     *
      * @return int
      */
     protected int getServerPort() {
@@ -50,6 +52,7 @@ public class Client {
 
     /**
      * Получение имени пользователя
+     *
      * @return String
      */
     protected String getUserName() {
@@ -59,6 +62,7 @@ public class Client {
 
     /**
      * Получение пароля
+     *
      * @return String
      */
     protected String getPassword() {
@@ -68,6 +72,7 @@ public class Client {
 
     /**
      * Получить поток обработки сообщений
+     *
      * @return SocketThread
      */
     protected SocketThread getSocketThread() {
@@ -76,10 +81,11 @@ public class Client {
 
     /**
      * Отправка сообщения TEXT
+     *
      * @param text String
      */
     protected void sendTextMessage(String text) {
-            connection.send(new Message(MessageType.TEXT, text, currentUser));
+        connection.send(new Message(MessageType.TEXT, text, currentUser));
     }
 
     public void run() {
@@ -97,7 +103,7 @@ public class Client {
         }
         if (clientConnected) printMessage.writeMessage("Соединение установлено.\n" +
                 "Для выхода наберите команду 'exit'.");
-        else printMessage.writeMessage("Произошла ошибка во время работы клиента.");
+        else printMessage.writeMessage("Произошла ошибка во время плдключения.");
         while (clientConnected) {
             String text = printMessage.readString();
             if (text.equals("exit")) break;
@@ -125,6 +131,7 @@ public class Client {
 
         /**
          * Вывод полученного сообщения
+         *
          * @param message String
          */
         protected void processIncomingMessage(String message) {
@@ -133,6 +140,7 @@ public class Client {
 
         /**
          * Информирование об присоединении пользователя
+         *
          * @param userName String
          */
         protected void informAddUser(String userName) {
@@ -141,6 +149,7 @@ public class Client {
 
         /**
          * Информирование об отсоединении пользователя
+         *
          * @param userName String
          */
         protected void informDeleteUser(String userName) {
@@ -149,6 +158,7 @@ public class Client {
 
         /**
          * Изменить статус соединения
+         *
          * @param clientConnected boolean
          */
         protected void notifyStatusConnection(boolean clientConnected) {
@@ -160,6 +170,7 @@ public class Client {
 
         /**
          * Проверка имени и подключение к серверу
+         *
          * @throws IOException IOException
          */
         protected void clientHandshake() throws IOException {
@@ -167,25 +178,41 @@ public class Client {
             String password = "";
             while (!clientConnected) {
                 Message message = connection.receive();
-                if (message.getType() == MessageType.CONNECT) continue;
-                if (message.getType() == MessageType.NAME_REQUEST) {
-                    printMessage.writeMessage(message.getData());
-                    clientName = getUserName();
-                    password = getPassword();
-                    connection.send(new Message(MessageType.USER_NAME, clientName + " :: " + password, UNKNOWN));
-                } else if (message.getType() == MessageType.NAME_ACCEPTED) {
-                    int index = Integer.parseInt(message.getData());
-                    currentUser = new User(index, clientName, password);
-                    notifyStatusConnection(true);
-                } else throw new IOException("Ошибка типа сообщения при получении имени и пароля");
+                switch (message.getType()) {
+                         // Получение зашифрованно ключа
+                    case CONNECT:
+                        break;
+                        // Дисконект при 3-х не правильных паролях
+                    case SERVER_DISCONNECT:
+                        printMessage.writeMessage(message.getData());
+                        notifyStatusConnection(false);
+                        break;
+                        // Ввод имени и пароля
+                    case NAME_REQUEST:
+                        printMessage.writeMessage(message.getData());
+                        clientName = getUserName();
+                        password = getPassword();
+                        connection.send(new Message(MessageType.USER_NAME,
+                                clientName + " :: " + password, UNKNOWN));
+                        break;
+                        // Имя подтверждено
+                    case NAME_ACCEPTED:
+                        int index = Integer.parseInt(message.getData());
+                        currentUser = new User(index, clientName, password);
+                        notifyStatusConnection(true);
+                        break;
+                    default:
+                        throw new IOException("Ошибка типа сообщения при получении имени и пароля");
+                }
             }
         }
 
         /**
          * Цикл получения и обработки сообщений
+         *
          * @throws IOException IOException
          */
-        protected void clientMessageLoop() throws IOException{
+        protected void clientMessageLoop() throws IOException {
             while (clientConnected) {
                 Message message = connection.receive();
                 switch (message.getType()) {
