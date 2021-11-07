@@ -3,12 +3,14 @@ package ru.dmitrii.client;
 import javax.swing.*;
 import java.awt.*;
 
+import static java.awt.Frame.MAXIMIZED_BOTH;
+
 public class ClientGuiView {
     private final ClientGuiController controller;
 
     private final JFrame frame = new JFrame("Чат");
     private final JTextField textField = new JTextField(50);
-    private final JTextArea messages = new JTextArea(10, 50);
+    private final JTextArea messages = new JTextArea(10, 80 );
     private final JTextArea users = new JTextArea(10, 10);
 
     public ClientGuiView(ClientGuiController controller) {
@@ -20,10 +22,33 @@ public class ClientGuiView {
         textField.setEditable(false);
         messages.setEditable(false);
         users.setEditable(false);
+        frame.setExtendedState(MAXIMIZED_BOTH);
+        textField.setFont(new Font("Dialog", Font.PLAIN, 14));
+        JFrame.setDefaultLookAndFeelDecorated(true);
 
-        frame.getContentPane().add(textField, BorderLayout.NORTH);
-        frame.getContentPane().add(new JScrollPane(messages), BorderLayout.WEST);
-        frame.getContentPane().add(new JScrollPane(users), BorderLayout.EAST);
+
+        // Главная разделяемая панель
+        final JSplitPane splitHorizontal = new JSplitPane();
+        splitHorizontal.setOneTouchExpandable(true);
+        // Размер разделяемой панели
+        splitHorizontal.setDividerSize(8);
+        // Положение разделяемой панели
+        splitHorizontal.setDividerLocation(400);
+        // Вертикальная разделяемая панель
+        JSplitPane splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
+        // Создание панелей
+        splitVertical.setTopComponent   (users);
+        splitVertical.setBottomComponent(textField);
+        // Положение разделяемой панели
+        splitVertical.setDividerLocation(400);
+        // Настройка главной панели
+        splitHorizontal.setLeftComponent(new JScrollPane(new JScrollPane(messages)));
+        splitHorizontal.setRightComponent(splitVertical);
+
+//        frame.getContentPane().add(textField, BorderLayout.SOUTH);
+        frame.getContentPane().add(splitHorizontal);
+//        frame.getContentPane().add(new JScrollPane(messages), BorderLayout.WEST);
+//        frame.getContentPane().add(new JScrollPane(users), BorderLayout.EAST);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);

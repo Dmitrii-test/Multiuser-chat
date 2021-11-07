@@ -152,8 +152,12 @@ public class Server {
                     name = split[0].trim();
                     password = split[1].trim();
                     if (name.length() > 2 && name.length() < 24 && password.length() > 3) {
+                        if (CONNECTION_MAP.get(name) != null) {
+                            wrong = "Пользователь уже подключён";
+                            continue;
+                        }
                         // Проверяем что пользователя нет
-                        if (userDAO.checkNoUser(name) && CONNECTION_MAP.get(name) == null) {
+                        if (userDAO.checkNoUser(name)) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.save(new User(name, password));
                             connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), SERVER_USER));
