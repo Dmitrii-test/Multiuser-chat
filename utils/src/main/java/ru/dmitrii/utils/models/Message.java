@@ -7,7 +7,7 @@ public class Message implements Serializable {
     private  int id;
     private  MessageType type;
     private  String data;
-    private LocalDateTime dateTime;
+    private  LocalDateTime dateTime;
     private  User author;
 
     public Message() {

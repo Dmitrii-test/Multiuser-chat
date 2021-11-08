@@ -5,13 +5,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.dmitrii.utils.models.Message;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Component
 public class MessageDAO implements CRUD<Message>{
     private final JdbcTemplate jdbcTemplate;
+    private final MessageMapper messageMapper;
 
     @Autowired
-    public MessageDAO(JdbcTemplate jdbcTemplate) {
+    public MessageDAO(JdbcTemplate jdbcTemplate, MessageMapper messageMapper) {
         this.jdbcTemplate = jdbcTemplate;
+        this.messageMapper = messageMapper;
     }
 
     @Override
@@ -24,6 +29,11 @@ public class MessageDAO implements CRUD<Message>{
     @Override
     public Message show(int Id) {
         return null;
+    }
+
+
+    public List<Message> showMessageTime() {
+        return  jdbcTemplate.query("SELECT * FROM messages WHERE datetime >= NOW() - interval '2 hour' AND type='TEXT'",messageMapper);
     }
 
     @Override

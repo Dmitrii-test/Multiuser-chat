@@ -26,9 +26,12 @@ public class ClientGuiController extends Client{
         return view.getServerPort();
     }
     @Override
-    protected String getUserName() {
-        return view.getUserName();
+    protected String getUserName() {return view.getUserName();
     }
+    @Override
+    protected String getPassword() { return view.getPassword();
+    }
+
     public ClientGuiModel getModel() {
         return model;
     }

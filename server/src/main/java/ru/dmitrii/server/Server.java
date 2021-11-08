@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
@@ -27,7 +28,8 @@ public class Server {
     static private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<>();
     static private final PrintMessage PRINT_MESSAGE = new ConsolePrinter();
     static private final List<Handler> HANDLER_LIST = new ArrayList<>();
-    static private final User SERVER_USER = new User(2, "server", "server");;
+    static private final User SERVER_USER = new User(2, "server", "server");
+    ;
     static private UserDAO userDAO;
     static private MessageDAO messageDAO;
 
@@ -131,18 +133,31 @@ public class Server {
             String name = "";
             String password = "";
             String wrong = "";
+            String error = "Превышено допустимое количество попыток попыток ввода пароля";
             connection.sendKey(new Message(MessageType.CONNECT, "", SERVER_USER));
+            int count = 0;
             while (!accepted) {
+                //Проверяем количество ввода пароля
+                if (count >= 3) {
+                    connection.send(new Message(MessageType.SERVER_DISCONNECT, error, SERVER_USER));
+                    connection.close();
+                    break;
+                }
+                // Запрашиваем пароль
                 connection.send(new Message(MessageType.NAME_REQUEST, wrong, SERVER_USER));
                 Message message = connection.receive();
                 messageDAO.save(message);
                 if (message.getType() == MessageType.USER_NAME) {
                     String[] split = message.getData().split(" :: ");
-                    name = split[0];
-                    password = split[1];
+                    name = split[0].trim();
+                    password = split[1].trim();
                     if (name.length() > 2 && name.length() < 24 && password.length() > 3) {
+                        if (CONNECTION_MAP.get(name) != null) {
+                            wrong = "Пользователь уже подключён";
+                            continue;
+                        }
                         // Проверяем что пользователя нет
-                        if (userDAO.checkNoUser(name) && CONNECTION_MAP.get(name) == null) {
+                        if (userDAO.checkNoUser(name)) {
                             CONNECTION_MAP.putIfAbsent(name, connection);
                             int index = userDAO.save(new User(name, password));
                             connection.send(new Message(MessageType.NAME_ACCEPTED, String.valueOf(index), SERVER_USER));
@@ -157,6 +172,7 @@ public class Server {
                             accepted = true;
                         }
                         wrong = "Не правильный пароль пользователя";
+                        count++;
                         continue;
                     }
                     wrong = "Не допустимая длина имени пользователя или пароля(имя пользвателя не меньше 3 символов, " +
@@ -181,6 +197,17 @@ public class Server {
         }
 
         /**
+         * Отправить подключившемуся пользователю сообщения за последние два часа
+         *
+         * @param connection Connection
+         */
+        private void sendLastMessages(Connection connection) {
+            List<Message> messages = messageDAO.showMessageTime();
+            messages.forEach(n -> n.setData(getStringMessage(n)));
+            messages.forEach(connection::send);
+        }
+
+        /**
          * Цикл приема и обработки сообщений Text
          *
          * @param connection Connection
@@ -190,20 +217,29 @@ public class Server {
             while (!Thread.currentThread().isInterrupted()) {
                 Message message = connection.receive();
                 messageDAO.save(message);
-                User author = message.getAuthor();
                 if (message.getType() == MessageType.TEXT) {
-                    String messageText = String.format("%s (%s) : %s", author.getName(), message.getDateTime()
-                                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)),
-                            message.getData());
+                    String messageText = getStringMessage(message);
                     PRINT_MESSAGE.writeMessage(messageText);
                     message.setData(messageText);
                     sendBroadcastMessage(message);
                 } else PRINT_MESSAGE.writeMessage(
                         String.format("Ошибка! Недопустимый тип сообщения (MessageType.%s) от клиента: %s",
-                                message.getType().toString(), author.getName()));
+                                message.getType().toString(), message.getAuthor()));
 
             }
 
+        }
+
+        /**
+         * Преобразование сообщения
+         *
+         * @param message Message
+         * @return String
+         */
+        private String getStringMessage(Message message) {
+            return String.format("%s (%s) : %s", message.getAuthor().getName(), message.getDateTime()
+                    .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT,
+                            FormatStyle.SHORT)), message.getData());
         }
 
         @Override
@@ -219,6 +255,7 @@ public class Server {
                 sendBroadcastMessage(messageAdd);
                 PRINT_MESSAGE.writeMessage(String.format("%s присоединился к серверу", clientName));
                 notifyAddUser(connection, clientName);
+                sendLastMessages(connection);
                 serverMessageLoop(connection);
             } catch (IOException e) {
                 PRINT_MESSAGE.writeMessage(e.getMessage());
@@ -229,6 +266,5 @@ public class Server {
             }
             PRINT_MESSAGE.writeMessage(String.format("Соединение с удаленным адресом (%s) закрыто.", socket.getRemoteSocketAddress()));
         }
-
     }
 }

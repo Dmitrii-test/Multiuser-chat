@@ -37,7 +37,7 @@ public class BotClient extends Client {
     public class BotSocketThread extends SocketThread {
         @Override
         protected void clientMessageLoop() throws IOException{
-            sendTextMessage("Привет чатику. Я бот. Понимаю команды: дата, день, месяц, год, время, час, минуты, секунды.");
+            sendTextMessage("Привет чатику. Я бот. Понимаю команды: дата, день, месяц, год, время, час.");
             super.clientMessageLoop();
         }
 
@@ -65,12 +65,6 @@ public class BotClient extends Client {
                         break;
                     case "час":
                         dateformat = "H";
-                        break;
-                    case "минуты":
-                        dateformat = "m";
-                        break;
-                    case "секунды":
-                        dateformat = "s";
                         break;
                 }
                 if (dateformat != null) {
