@@ -2,6 +2,7 @@ package ru.dmitrii.client;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 import static java.awt.Frame.MAXIMIZED_BOTH;
 
@@ -9,7 +10,7 @@ public class ClientGuiView {
     private final ClientGuiController controller;
 
     private final JFrame frame = new JFrame("Чат");
-    private final JTextField textField = new JTextField(50);
+    private final JTextField textField = new JTextField();
     private final JTextArea messages = new JTextArea(10, 80 );
     private final JTextArea users = new JTextArea(10, 10);
 
@@ -23,40 +24,55 @@ public class ClientGuiView {
         messages.setEditable(false);
         users.setEditable(false);
         frame.setExtendedState(MAXIMIZED_BOTH);
+
         textField.setFont(new Font("Dialog", Font.PLAIN, 14));
+        users.setFont(new Font("Dialog", Font.PLAIN, 16));
         JFrame.setDefaultLookAndFeelDecorated(true);
 
+        // Слушатель на отправку сообщений
+        ActionListener actionListener = e -> {
+            if (!textField.getText().isEmpty()) {
+                controller.sendTextMessage(textField.getText());
+                textField.setText("");
+            }
+        };
 
+        JButton button = new JButton("Отправить");
+        // Подключение слушателей событий
+        button.addActionListener(actionListener);
+        textField.addActionListener(actionListener);
         // Главная разделяемая панель
         final JSplitPane splitHorizontal = new JSplitPane();
-        splitHorizontal.setOneTouchExpandable(true);
         // Размер разделяемой панели
-        splitHorizontal.setDividerSize(8);
+        splitHorizontal.setDividerSize(4);
         // Положение разделяемой панели
-        splitHorizontal.setDividerLocation(400);
+        splitHorizontal.setDividerLocation(0.9);
+        splitHorizontal.setResizeWeight(0.9);
+        // Панель отправки сообщений
+        JSplitPane splitMessages = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true);
+        splitMessages.setLeftComponent(textField);
+        splitMessages.setRightComponent(button);
+        splitMessages.setDividerLocation(0.9);
+        splitMessages.setResizeWeight(0.9);
+
         // Вертикальная разделяемая панель
         JSplitPane splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
-        // Создание панелей
-        splitVertical.setTopComponent   (users);
-        splitVertical.setBottomComponent(textField);
+        splitVertical.setTopComponent (messages);
+        splitVertical.setBottomComponent(splitMessages);
+        splitVertical.setDividerSize(20);
         // Положение разделяемой панели
-        splitVertical.setDividerLocation(400);
+        splitVertical.setDividerLocation(0.9);
+        splitVertical.setResizeWeight(0.9);
         // Настройка главной панели
-        splitHorizontal.setLeftComponent(new JScrollPane(new JScrollPane(messages)));
-        splitHorizontal.setRightComponent(splitVertical);
+        splitHorizontal.setRightComponent(new JScrollPane(new JScrollPane(users)));
+        splitHorizontal.setLeftComponent(splitVertical);
 
-//        frame.getContentPane().add(textField, BorderLayout.SOUTH);
         frame.getContentPane().add(splitHorizontal);
-//        frame.getContentPane().add(new JScrollPane(messages), BorderLayout.WEST);
-//        frame.getContentPane().add(new JScrollPane(users), BorderLayout.EAST);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-
-        textField.addActionListener(e -> {
-            controller.sendTextMessage(textField.getText());
-            textField.setText("");
-        });
+        textField.grabFocus();
+        textField.requestFocus();
     }
 
     public String getServerAddress() {
