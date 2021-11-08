@@ -136,10 +136,16 @@ public class ClientGuiView {
 
     }
 
+    /**
+     * Сохраненем и обновляем поле Messages
+     */
     public void refreshMessages() {
         messages.append(controller.getModel().getNewMessage() + "\n");
     }
 
+    /**
+     * Обновляем список пользователей в поле
+     */
     public void refreshUsers() {
         ClientGuiModel model = controller.getModel();
         StringBuilder sb = new StringBuilder();
