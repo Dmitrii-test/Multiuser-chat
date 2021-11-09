@@ -1,4 +1,4 @@
-package ru.dmitrii.client;
+package ru.dmitrii.client.gui;
 
 import java.util.Collections;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package ru.dmitrii.utils;
+package ru.dmitrii.utils.connections;
 
 import ru.dmitrii.utils.models.Message;
 import ru.dmitrii.utils.printers.ConsolePrinter;
@@ -66,7 +66,6 @@ public class Connection implements Closeable {
             printMessage.writeMessage("Ошибка отправки сообщения " + e.getMessage());
         }
     }
-
 
     /**
      * Метод получения зашифрованого Message

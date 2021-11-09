@@ -1,4 +1,4 @@
-package ru.dmitrii.utils;
+package ru.dmitrii.utils.connections;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;

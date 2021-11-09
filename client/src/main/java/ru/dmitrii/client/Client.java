@@ -1,9 +1,10 @@
 package ru.dmitrii.client;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import ru.dmitrii.utils.Connection;
+import ru.dmitrii.utils.connections.Connection;
 import ru.dmitrii.utils.UtilsConfiguration;
 import ru.dmitrii.utils.models.Message;
+import ru.dmitrii.utils.models.MessageImpl;
 import ru.dmitrii.utils.models.MessageType;
 import ru.dmitrii.utils.models.User;
 import ru.dmitrii.utils.printers.PrintMessage;
@@ -13,10 +14,10 @@ import java.net.Socket;
 
 public class Client {
     protected Connection connection;
-    private volatile boolean clientConnected = false;
-    private final PrintMessage printMessage;
-    User currentUser;
-    private static final User UNKNOWN = new User(2, "unknown", "");
+    protected volatile boolean clientConnected = false;
+    protected final PrintMessage printMessage;
+    protected User currentUser;
+    protected static final User UNKNOWN = new User(2, "unknown", "");
 
     public Client() {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -84,8 +85,8 @@ public class Client {
      *
      * @param text String
      */
-    protected void sendTextMessage(String text) {
-        connection.send(new Message(MessageType.TEXT, text, currentUser));
+    public void sendTextMessage(String text) {
+        connection.send(new MessageImpl(MessageType.TEXT, text, currentUser));
     }
 
     public void run() {
@@ -179,23 +180,23 @@ public class Client {
             while (!clientConnected) {
                 Message message = connection.receive();
                 switch (message.getType()) {
-                         // Получение зашифрованно ключа
+                    // Получение зашифрованно ключа
                     case CONNECT:
                         break;
-                        // Дисконект при 3-х не правильных паролях
+                    // Дисконект при 3-х не правильных паролях
                     case SERVER_DISCONNECT:
                         printMessage.writeMessage(message.getData());
                         notifyStatusConnection(false);
                         break;
-                        // Ввод имени и пароля
+                    // Ввод имени и пароля
                     case NAME_REQUEST:
                         printMessage.writeMessage(message.getData());
                         clientName = getUserName();
                         password = getPassword();
-                        connection.send(new Message(MessageType.USER_NAME,
+                        connection.send(new MessageImpl(MessageType.USER_NAME,
                                 clientName + " :: " + password, UNKNOWN));
                         break;
-                        // Имя подтверждено
+                    // Имя подтверждено
                     case NAME_ACCEPTED:
                         int index = Integer.parseInt(message.getData());
                         currentUser = new User(index, clientName, password);

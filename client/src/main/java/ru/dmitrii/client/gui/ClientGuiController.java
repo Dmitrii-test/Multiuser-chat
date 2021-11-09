@@ -1,7 +1,9 @@
-package ru.dmitrii.client;
+package ru.dmitrii.client.gui;
+
+import ru.dmitrii.client.Client;
 
 // Реализуем Client в swing
-public class ClientGuiController extends Client{
+public class ClientGuiController extends Client {
     private final ClientGuiModel model;
     private final ClientGuiView view;
 

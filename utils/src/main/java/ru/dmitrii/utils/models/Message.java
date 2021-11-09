@@ -3,77 +3,24 @@ package ru.dmitrii.utils.models;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Message implements Serializable {
-    private  int id;
-    private  MessageType type;
-    private  String data;
-    private  LocalDateTime dateTime;
-    private  User author;
+public interface Message extends Serializable {
+    int getId();
 
-    public Message() {
-    }
+    void setId(int id);
 
-    public Message(String data, LocalDateTime dateTime, User author) {
-        this.data = data;
-        this.dateTime = dateTime;
-        this.author = author;
-    }
+    MessageType getType();
 
-    public Message(MessageType type, String data, User author) {
-        this.type = type;
-        this.data = data;
-        dateTime = LocalDateTime.now();
-        this.author = author;
-    }
+    void setType(MessageType type);
 
-    public int getId() {
-        return id;
-    }
+    String getData();
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    void setData(String data);
 
-    public MessageType getType() {
-        return type;
-    }
+    LocalDateTime getDateTime();
 
-    public void setType(MessageType type) {
-        this.type = type;
-    }
+    void setDateTime(LocalDateTime dateTime);
 
-    public String getData() {
-        return data;
-    }
+    User getAuthor();
 
-    public void setData(String data) {
-        this.data = data;
-    }
-
-    public LocalDateTime getDateTime() {
-        return dateTime;
-    }
-
-    public void setDateTime(LocalDateTime dateTime) {
-        this.dateTime = dateTime;
-    }
-
-    public User getAuthor() {
-        return author;
-    }
-
-    public void setAuthor(User author) {
-        this.author = author;
-    }
-
-    @Override
-    public String toString() {
-        return "Message{" +
-                "id=" + id +
-                ", type=" + type +
-                ", data='" + data + '\'' +
-                ", dateTime=" + dateTime +
-                ", author=" + author +
-                '}';
-    }
+    void setAuthor(User author);
 }

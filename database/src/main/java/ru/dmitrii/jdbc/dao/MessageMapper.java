@@ -3,6 +3,7 @@ package ru.dmitrii.jdbc.dao;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.dmitrii.utils.models.Message;
+import ru.dmitrii.utils.models.MessageImpl;
 import ru.dmitrii.utils.models.MessageType;
 
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class MessageMapper implements RowMapper<Message> {
 
     @Override
     public Message mapRow(ResultSet rs, int rowNum) throws SQLException {
-        Message message = new Message();
+        Message message = new MessageImpl();
         message.setId(rs.getInt("id_message"));
         message.setType(MessageType.valueOf(rs.getString("type")));
         message.setData(rs.getString("data"));
