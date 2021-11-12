@@ -1,12 +1,11 @@
 package ru.dmitrii.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import ru.dmitrii.utils.connections.Connection;
 import ru.dmitrii.utils.UtilsConfiguration;
-import ru.dmitrii.utils.models.Message;
-import ru.dmitrii.utils.models.MessageImpl;
-import ru.dmitrii.utils.models.MessageType;
-import ru.dmitrii.utils.models.User;
+import ru.dmitrii.utils.models.*;
 import ru.dmitrii.utils.printers.PrintMessage;
 
 import java.io.IOException;
@@ -17,7 +16,8 @@ public class Client {
     protected volatile boolean clientConnected = false;
     protected final PrintMessage printMessage;
     protected User currentUser;
-    protected static final User UNKNOWN = new User(2, "unknown", "");
+    protected static final User UNKNOWN = new UserImpl(2, "unknown", "");
+    private final Logger logger = LoggerFactory.getLogger(Client.class);
 
     public Client() {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -49,6 +49,21 @@ public class Client {
     protected int getServerPort() {
         printMessage.writeMessage("Введите порт сервера:");
         return printMessage.readInt();
+    }
+
+    /**
+     * Выбор авторизации
+     *
+     * @return MessageType
+     */
+    private MessageType getAuthorization() {
+        while (true) {
+            printMessage.writeMessage("Выберите: 1 - зарегистрироваться, 2 - аутентифицироваться");
+            int i = printMessage.readInt();
+            if (i == 1) return MessageType.USER_SIGNUP;
+            if (i == 2) return MessageType.USER_LOGIN;
+            else printMessage.writeMessage("Не правильный выбор");
+        }
     }
 
     /**
@@ -99,18 +114,20 @@ public class Client {
                 this.wait();
             } catch (InterruptedException e) {
                 printMessage.writeMessage("Произошла ошибка ожидания");
+                logger.error("Произошла ошибка ожидания" + e.getMessage());
                 return;
             }
         }
-        if (clientConnected) printMessage.writeMessage("Соединение установлено.\n" +
-                "Для выхода наберите команду 'exit'.");
-        else printMessage.writeMessage("Произошла ошибка во время плдключения.");
+        if (clientConnected) {
+            printMessage.writeMessage("Соединение установлено.\nДля выхода наберите команду 'exit'.");
+        } else printMessage.writeMessage("Произошла ошибка во время плдключения.");
         while (clientConnected) {
             String text = printMessage.readString();
             if (text.equals("exit")) break;
             sendTextMessage(text);
         }
         printMessage.writeMessage("Выключение");
+        logger.info("Клиент выключен.");
     }
 
     /**
@@ -120,12 +137,15 @@ public class Client {
         @Override
         public void run() {
             try {
+                logger.info("Клиент запущен");
                 Socket socket = new Socket(getServerAddress(), getServerPort());
                 connection = new Connection(socket);
+                logger.info("Установленно соединение с сервером {}", connection.getRemoteSocketAddress());
                 clientHandshake();
                 clientMessageLoop();
             } catch (IOException e) {
-                printMessage.writeMessage("Ошибка связи " + e.getMessage());
+                printMessage.writeMessage("Ошибка установления связи " + e.getMessage());
+                logger.error("Ошибка установления связи " + e.getMessage());
                 notifyStatusConnection(false);
             }
         }
@@ -186,24 +206,28 @@ public class Client {
                     // Дисконект при 3-х не правильных паролях
                     case SERVER_DISCONNECT:
                         printMessage.writeMessage(message.getData());
+                        logger.error("Исчерпаны попытки подключения к пользователю {}", clientName);
                         notifyStatusConnection(false);
                         break;
                     // Ввод имени и пароля
                     case NAME_REQUEST:
                         printMessage.writeMessage(message.getData());
+                        MessageType type = getAuthorization();
                         clientName = getUserName();
                         password = getPassword();
-                        connection.send(new MessageImpl(MessageType.USER_NAME,
+                        connection.send(new MessageImpl(type,
                                 clientName + " :: " + password, UNKNOWN));
                         break;
                     // Имя подтверждено
                     case NAME_ACCEPTED:
                         int index = Integer.parseInt(message.getData());
-                        currentUser = new User(index, clientName, password);
+                        currentUser = new UserImpl(index, clientName, password);
+                        logger.info("Доступ к {} подтверждён", clientName);
                         notifyStatusConnection(true);
                         break;
                     default:
-                        throw new IOException("Ошибка типа сообщения при получении имени и пароля");
+                        logger.error("Ошибка типа сообщения {} при получении имени", message.getType());
+                        throw new IOException("Ошибка типа сообщения при авторизации " + message.getType());
                 }
             }
         }
@@ -232,6 +256,7 @@ public class Client {
                         break;
                     }
                     default:
+                        logger.error("Ошибка типа сообщения {} в цикле работы", message.getType());
                         throw new IOException("Ошибка типа сообщения в чате");
                 }
             }

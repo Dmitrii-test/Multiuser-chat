@@ -1,6 +1,7 @@
 package ru.dmitrii.jdbc;
 
 import liquibase.integration.spring.SpringLiquibase;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -68,7 +69,7 @@ public class DataConfiguration {
     }
 
     @Bean
-    public SpringLiquibase liquibase(SpringLiquibase liquibaseDB) {
+    public SpringLiquibase liquibase(@NotNull SpringLiquibase liquibaseDB) {
         liquibaseDB.setChangeLog("classpath:db/changelog/db.changelog-master.xml");
         liquibaseDB.setDataSource(dataSource());
         return liquibaseDB;

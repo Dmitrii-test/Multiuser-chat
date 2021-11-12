@@ -1,5 +1,7 @@
 package ru.dmitrii.utils.connections;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dmitrii.utils.models.Message;
 import ru.dmitrii.utils.printers.ConsolePrinter;
 import ru.dmitrii.utils.printers.PrintMessage;
@@ -23,6 +25,7 @@ public class Connection implements Closeable {
     private Cipher cipherOut;
     private Cipher cipherIn;
     private SecretKey key;
+    private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
     public Connection(Socket socket) throws IOException {
         this.socket = socket;
@@ -46,6 +49,7 @@ public class Connection implements Closeable {
                 }
             } catch (IOException | NoSuchAlgorithmException e) {
                 printMessage.writeMessage("Ошибка отправки ключа " + e.getMessage());
+                logger.error("Ошибка отправки ключа " + e.getMessage());
             }
         }
     }
@@ -64,6 +68,7 @@ public class Connection implements Closeable {
             }
         } catch (IOException | IllegalBlockSizeException e) {
             printMessage.writeMessage("Ошибка отправки сообщения " + e.getMessage());
+            logger.error("Ошибка отправки сообщения " + e.getMessage());
         }
     }
 
@@ -79,7 +84,7 @@ public class Connection implements Closeable {
                 synchronized (in) {
                     message = (Message) in.readObject();
                     String data = message.getData();
-                    key = Encryption.convertStringToSecretKey(Encryption.decryptString(data,4));
+                    key = Encryption.convertStringToSecretKey(Encryption.decryptString(data, 4));
                 }
                 initCipher();
             } else {
@@ -91,6 +96,7 @@ public class Connection implements Closeable {
             }
         } catch (ClassNotFoundException | IllegalBlockSizeException | BadPaddingException e) {
             printMessage.writeMessage("Ошибка получения Message " + e.getMessage());
+            logger.error("Ошибка получения Message " + e.getMessage());
         }
         return message;
     }
@@ -106,6 +112,7 @@ public class Connection implements Closeable {
             cipherIn.init(Cipher.DECRYPT_MODE, key);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             printMessage.writeMessage("Ошибка инициализации Cipher " + e.getMessage());
+            logger.error("Ошибка инициализации Cipher " + e.getMessage());
         }
     }
 
@@ -129,8 +136,7 @@ public class Connection implements Closeable {
             socket.close();
         } catch (IOException e) {
             printMessage.writeMessage("Ошибка закрытия Connection " + e.getMessage());
+            logger.error("Ошибка закрытия Connection " + e.getMessage());
         }
     }
-
-
 }

@@ -1,5 +1,6 @@
 package ru.dmitrii.jdbc.dao;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.dmitrii.utils.models.Message;
@@ -12,14 +13,14 @@ import java.sql.SQLException;
 @Component
 public class MessageMapper implements RowMapper<Message> {
 
-    private final UserDAO userDAO;
+    private final UserDao userDAO;
 
-    public MessageMapper(UserDAO userDAO) {
+    public MessageMapper(UserDao userDAO) {
         this.userDAO = userDAO;
     }
 
     @Override
-    public Message mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public Message mapRow(@NotNull ResultSet rs, int rowNum) throws SQLException, NullPointerException {
         Message message = new MessageImpl();
         message.setId(rs.getInt("id_message"));
         message.setType(MessageType.valueOf(rs.getString("type")));

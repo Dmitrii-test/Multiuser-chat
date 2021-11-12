@@ -8,7 +8,7 @@ public interface CRUD<T> {
 
     int save(T t);
 
-    T show(int Id);
+    T show(int id);
 
     void update(int id, T t);
 
