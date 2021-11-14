@@ -18,7 +18,7 @@ import java.util.concurrent.SynchronousQueue;
 
 @Service
 @Lazy
-public class BotClient extends Thread {
+public class ChatBot extends Thread {
 
     private volatile boolean run = false;
     private final User currentUser;
@@ -26,10 +26,10 @@ public class BotClient extends Thread {
     private final SynchronousQueue<Message> queue = new SynchronousQueue<>();
     private final UserDao userDAO;
     private final MessageDao messageDao;
-    private final Logger logger = LoggerFactory.getLogger(BotClient.class);
+    private final Logger logger = LoggerFactory.getLogger(ChatBot.class);
 
 
-    public BotClient(Server server, UserDao userDAO, MessageDao messageDAO) {
+    public ChatBot(Server server, UserDao userDAO, MessageDao messageDAO) {
         this.server = server;
         this.userDAO = userDAO;
         this.messageDao = messageDAO;
@@ -107,7 +107,7 @@ public class BotClient extends Thread {
      * @param name String to
      */
     public void clientsMessage(String name) {
-        sendTextMessage("Привет чатику. Я бот. Понимаю команды: bot-дата, bot-время, bot-online, bot-admin", name);
+        sendTextMessage("Привет чату. Я бот. Понимаю команды: bot-дата, bot-время, bot-online, bot-admin", name);
     }
 
 

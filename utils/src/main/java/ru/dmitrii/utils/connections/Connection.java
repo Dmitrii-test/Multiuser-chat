@@ -1,5 +1,6 @@
 package ru.dmitrii.utils.connections;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dmitrii.utils.models.Message;
@@ -27,7 +28,7 @@ public class Connection implements Closeable {
     private SecretKey key;
     private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
-    public Connection(Socket socket) throws IOException {
+    public Connection(@NotNull Socket socket) throws IOException {
         this.socket = socket;
         printMessage = new ConsolePrinter();
         out = new ObjectOutputStream(socket.getOutputStream());

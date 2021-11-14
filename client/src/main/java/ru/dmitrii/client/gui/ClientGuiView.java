@@ -1,5 +1,7 @@
 package ru.dmitrii.client.gui;
 
+import ru.dmitrii.utils.models.MessageType;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -11,7 +13,7 @@ public class ClientGuiView {
 
     private final JFrame frame = new JFrame("Чат");
     private final JTextField textField = new JTextField();
-    private final JTextArea messages = new JTextArea(10, 80 );
+    private final JTextArea messages = new JTextArea(10, 80);
     private final JTextArea users = new JTextArea(10, 10);
 
     public ClientGuiView(ClientGuiController controller) {
@@ -57,7 +59,7 @@ public class ClientGuiView {
 
         // Вертикальная разделяемая панель
         JSplitPane splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
-        splitVertical.setTopComponent (messages);
+        splitVertical.setTopComponent(messages);
         splitVertical.setBottomComponent(splitMessages);
         splitVertical.setDividerSize(20);
         // Положение разделяемой панели
@@ -102,6 +104,16 @@ public class ClientGuiView {
         }
     }
 
+    public MessageType getAuthorization() {
+        int result = JOptionPane.showConfirmDialog(
+                frame,
+                "Вы уже зарегистрировались :",
+                "Конфигурация клиента",
+                JOptionPane.YES_NO_OPTION);
+        if (result == JOptionPane.YES_OPTION) return MessageType.USER_LOGIN;
+        else return MessageType.USER_SIGNUP;
+    }
+
     public String getUserName() {
         return JOptionPane.showInputDialog(
                 frame,
@@ -137,7 +149,7 @@ public class ClientGuiView {
     }
 
     /**
-     * Сохраненем и обновляем поле Messages
+     * Сохраняем и обновляем поле Messages
      */
     public void refreshMessages() {
         messages.append(controller.getModel().getNewMessage() + "\n");

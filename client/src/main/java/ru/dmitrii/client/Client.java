@@ -56,7 +56,7 @@ public class Client {
      *
      * @return MessageType
      */
-    private MessageType getAuthorization() {
+    protected MessageType getAuthorization() {
         while (true) {
             printMessage.writeMessage("Выберите: 1 - зарегистрироваться, 2 - аутентифицироваться");
             int i = printMessage.readInt();
@@ -200,7 +200,7 @@ public class Client {
             while (!clientConnected) {
                 Message message = connection.receive();
                 switch (message.getType()) {
-                    // Получение зашифрованно ключа
+                    // Получение зашифрованного ключа
                     case CONNECT:
                         break;
                     // Дисконект при 3-х не правильных паролях

@@ -1,6 +1,7 @@
 package ru.dmitrii.client.gui;
 
 import ru.dmitrii.client.Client;
+import ru.dmitrii.utils.models.MessageType;
 
 // Реализуем Client в swing
 public class ClientGuiController extends Client {
@@ -16,26 +17,41 @@ public class ClientGuiController extends Client {
     protected SocketThread getSocketThread() {
         return new GuiSocketThread();
     }
+
     @Override
     public void run() {
-        SocketThread socketThread= getSocketThread();
+        SocketThread socketThread = getSocketThread();
         socketThread.run();
     }
+
     @Override
     protected String getServerAddress() {
         return view.getServerAddress();
     }
+
     @Override
     protected int getServerPort() {
         return view.getServerPort();
     }
-    @Override
-    protected String getUserName() {return view.getUserName();}
-    @Override
-    protected String getPassword() { return view.getPassword();}
 
-    public ClientGuiModel getModel() {return model;}
+    @Override
+    protected MessageType getAuthorization() {
+        return view.getAuthorization();
+    }
 
+    @Override
+    protected String getUserName() {
+        return view.getUserName();
+    }
+
+    @Override
+    protected String getPassword() {
+        return view.getPassword();
+    }
+
+    public ClientGuiModel getModel() {
+        return model;
+    }
 
 
     public static void main(String[] args) {
@@ -46,10 +62,11 @@ public class ClientGuiController extends Client {
     /**
      * Переопределяем внутренний класс Client для работы с Gui
      */
-    public class GuiSocketThread extends SocketThread{
+    public class GuiSocketThread extends SocketThread {
 
         /**
          * Полученное сообщение сохраняем и обновляем поле
+         *
          * @param message String
          */
         @Override
@@ -60,6 +77,7 @@ public class ClientGuiController extends Client {
 
         /**
          * Сохраняем имя пользователя и обновляем список
+         *
          * @param userName String
          */
         @Override
@@ -70,6 +88,7 @@ public class ClientGuiController extends Client {
 
         /**
          * Удаляем имя пользователя и обновляем список
+         *
          * @param userName String
          */
         @Override

@@ -11,9 +11,9 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.sourceEncoding>Cp866</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>Cp866</project.reporting.outputEncoding>
         <spring.version>5.4.0</spring.version>
-        <liquibase.version>4.5.0</liquibase.version>
     </properties>
 
     <dependencies>
@@ -45,6 +45,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
 </project>

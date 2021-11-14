@@ -1,5 +1,7 @@
 package ru.dmitrii.utils.connections;
 
+import org.jetbrains.annotations.NotNull;
+
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -28,7 +30,7 @@ public class Encryption {
      * @return String String
      */
 
-    protected static String convertSecretKeyToString(SecretKey secretKey) {
+    protected static String convertSecretKeyToString(@NotNull SecretKey secretKey) {
         byte[] rawData = secretKey.getEncoded();
         return Base64.getEncoder().encodeToString(rawData);
     }
@@ -40,6 +42,7 @@ public class Encryption {
      * @return SecretKey
      */
 
+    @NotNull
     protected static SecretKey convertStringToSecretKey(String encodedKey) {
         byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
         return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
@@ -53,18 +56,20 @@ public class Encryption {
      * @param k int Количество сдвигов
      * @return String
      */
+    @NotNull
     protected static String encryptionString(String str, int k) {
         return passString(str, k);
     }
 
 
     /**
-     * Метод расшифрования строки шифром Цезаря
+     * Метод расшифровки строки шифром Цезаря
      *
      * @param str String
      * @param n int Количество сдвигов
      * @return SecretKey
      */
+    @NotNull
     protected static String decryptString(String str, int n) {
         int k=Integer.parseInt("-"+n);
         return passString(str, k);
@@ -76,7 +81,8 @@ public class Encryption {
      * @param k int Количество сдвигов
      * @return String
      */
-    private static String passString(String str, int k) {
+    @NotNull
+    private static String passString(@NotNull String str, int k) {
         StringBuilder string= new StringBuilder();
         for(int i=0;i<str.length();i++) {
             char c=str.charAt(i);
@@ -99,5 +105,4 @@ public class Encryption {
         }
         return string.toString();
     }
-
 }

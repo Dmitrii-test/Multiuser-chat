@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
     <changeSet id="create-table-messages" author="Liquibase">
-        <sql>CREATE TYPE ms_type AS ENUM ('NAME_REQUEST','USER_NAME', 'NAME_ACCEPTED',
+        <sql>CREATE TYPE ms_type AS ENUM ('CONNECT', 'NAME_REQUEST', 'USER_LOGIN', 'USER_SIGNUP', 'NAME_ACCEPTED',
             'TEXT',  'USER_ADDED',  'USER_REMOVED', 'SERVER_DISCONNECT')</sql>
         <createTable tableName="messages">
             <column name="id_message" type="int" autoIncrement="true">
