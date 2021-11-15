@@ -6,14 +6,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.dmitrii.utils.models.Message;
 
 import java.util.Comparator;
 import java.util.List;
 
-@Component
+@Repository
 public class MessageDaoImpl implements MessageDao {
     private final JdbcTemplate jdbcTemplate;
     private final MessageMapper messageMapper;
