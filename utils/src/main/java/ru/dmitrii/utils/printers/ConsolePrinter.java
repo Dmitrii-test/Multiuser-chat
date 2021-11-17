@@ -23,8 +23,8 @@ public class ConsolePrinter implements PrintMessage {
 
     @Override
     public String readString() {
-        String S = "";
-        while (S.equals("")) {
+        String S = null;
+        while (S == null) {
             try {
                 S = bufferedReader.readLine();
             } catch (IOException e) {

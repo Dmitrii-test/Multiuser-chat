@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+    networks:
+      - postgres
+  server:
+    build: .
+    ports:
+      - 123:123
+    networks:
+      - postgres
+    depends_on:
+      - postgres
+volumes:
+  db-data:
+networks:
+  postgres:
+    driver: bridge
