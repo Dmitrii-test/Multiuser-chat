@@ -29,7 +29,6 @@ public class Encryption {
      * @param secretKey SecretKey
      * @return String String
      */
-
     protected static String convertSecretKeyToString(@NotNull SecretKey secretKey) {
         byte[] rawData = secretKey.getEncoded();
         return Base64.getEncoder().encodeToString(rawData);
@@ -41,9 +40,8 @@ public class Encryption {
      * @param encodedKey String
      * @return SecretKey
      */
-
     @NotNull
-    protected static SecretKey convertStringToSecretKey(String encodedKey) {
+    protected static SecretKey convertStringToSecretKey(@NotNull String encodedKey) {
         byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
         return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
     }
@@ -57,7 +55,7 @@ public class Encryption {
      * @return String
      */
     @NotNull
-    protected static String encryptionString(String str, int k) {
+    protected static String encryptionString(@NotNull String str, int k) {
         return passString(str, k);
     }
 
@@ -70,7 +68,7 @@ public class Encryption {
      * @return SecretKey
      */
     @NotNull
-    protected static String decryptString(String str, int n) {
+    protected static String decryptString(@NotNull String str, int n) {
         int k=Integer.parseInt("-"+n);
         return passString(str, k);
     }
