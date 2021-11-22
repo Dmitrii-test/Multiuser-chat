@@ -16,7 +16,10 @@ public class ClientGuiModel {
         return newMessage;
     }
 
-
+    /**
+     * Установить новое сообщение
+     * @param newMessage String
+     */
     public void setNewMessage(String newMessage) {
         this.newMessage = newMessage;
     }

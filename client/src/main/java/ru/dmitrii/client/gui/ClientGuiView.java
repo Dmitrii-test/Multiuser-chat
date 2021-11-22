@@ -81,7 +81,7 @@ public class ClientGuiView {
         return JOptionPane.showInputDialog(
                 frame,
                 "Введите адрес сервера:",
-                "Конфигурация клиента",
+                "Настройка подключения",
                 JOptionPane.QUESTION_MESSAGE);
     }
 
@@ -90,7 +90,7 @@ public class ClientGuiView {
             String port = JOptionPane.showInputDialog(
                     frame,
                     "Введите порт сервера:",
-                    "Конфигурация клиента",
+                    "Настройка подключения",
                     JOptionPane.QUESTION_MESSAGE);
             try {
                 return Integer.parseInt(port.trim());
@@ -98,7 +98,7 @@ public class ClientGuiView {
                 JOptionPane.showMessageDialog(
                         frame,
                         "Был введен некорректный порт сервера. Попробуйте еще раз.",
-                        "Конфигурация клиента",
+                        "Настройка подключения",
                         JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -118,7 +118,7 @@ public class ClientGuiView {
         return JOptionPane.showInputDialog(
                 frame,
                 "Введите ваше имя:",
-                "Конфигурация клиента",
+                "Аутентификация",
                 JOptionPane.QUESTION_MESSAGE);
     }
 
@@ -126,7 +126,7 @@ public class ClientGuiView {
         return JOptionPane.showInputDialog(
                 frame,
                 "Введите ваш пароль:",
-                "Конфигурация клиента",
+                "Аутентификация",
                 JOptionPane.QUESTION_MESSAGE);
     }
 
